@@ -335,7 +335,7 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
     iprintf("psxnds proof of concept\n");
     iprintf("A:1  B:%lu  X:auto  Y:x8\n", (unsigned long)g_run_batch);
     iprintf("L/R: batch  START: reload\n");
-    iprintf("SELECT: test mode  DEBUG: save tests\n\n");
+    iprintf("SELECT: test mode  L: save tests\n\n");
 
     iprintf("source: %s\n", boot->source_label);
     iprintf("ram: %s\n", psx->ram_backend_name);
@@ -453,6 +453,9 @@ int main(void) {
         }
 
         if (keys_pressed & KEY_START) {
+            if (g_test_suite.total_tests > 0) {
+                test_save_results(&g_test_suite);
+            }
             try_load_exe(&g_psx, &g_boot);
             total_steps = 0;
             g_auto_run = false;
@@ -466,18 +469,20 @@ int main(void) {
                 g_psx.test_mode = true;
                 test_init(&g_test_suite);
             } else {
+                if (g_test_suite.total_tests > 0) {
+                    test_save_results(&g_test_suite);
+                }
                 g_psx.test_mode = false;
             }
             redraw = true;
         }
 
-        if (keys_pressed & KEY_DEBUG) {
+        if (keys_pressed & KEY_L) {
             if (g_test_suite.test_mode && g_test_suite.total_tests > 0) {
                 test_save_results(&g_test_suite);
                 snprintf(g_boot.status_line, sizeof(g_boot.status_line),
-                        "Saved %lu test results to %s",
-                        (unsigned long)g_test_suite.total_tests,
-                        g_test_suite.results_file);
+                        "Saved %lu test results",
+                        (unsigned long)g_test_suite.total_tests);
                 redraw = true;
             }
         }

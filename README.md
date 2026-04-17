@@ -101,10 +101,10 @@ Goal: Better FPS and user experience
 - `B`: execute the current batch size
 - `Y`: execute 8 batches at once
 - `X`: toggle auto-run
-- `L` / `R`: halve or double the batch size
-- `START`: reload files and reboot emulator state
-- `SELECT`: toggle test mode
-- `Z`: save test results to SD card
+- `L`: halve batch size OR save test results (in test mode)
+- `R`: double the batch size
+- `START`: reload files and reboot (also saves test results)
+- `SELECT`: toggle test mode (also saves results when exiting)
 
 ## Testing Procedures
 
@@ -114,7 +114,7 @@ To reduce SD card wear, use the batch testing system:
 2. Use `A`, `B`, or `Y` to run instructions in batches
 3. Each batch run records a test result
 4. Error codes are displayed on screen
-5. Press `Z` to save all results to `/psx/test_results.txt`
+5. Test results auto-save when pressing `SELECT` to exit test mode or `START` to reload
 
 ### Error Codes
 

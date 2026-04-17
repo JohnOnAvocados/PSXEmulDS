@@ -1,3 +1,3 @@
-psx_cdrom.o: C:/DS_Homebrew/PS1_Emulator/source/psx_cdrom.c \
- C:/DS_Homebrew/PS1_Emulator/include/psx_cdrom.h
-C:/DS_Homebrew/PS1_Emulator/include/psx_cdrom.h:
+psx_cdrom.o: C:/DS_Homebrew/PSXEmulDS/source/psx_cdrom.c \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h
+C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h:
