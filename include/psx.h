@@ -1,0 +1,102 @@
+#ifndef PSX_H
+#define PSX_H
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#define PSX_RAM_SIZE (2 * 1024 * 1024)
+#define PSX_BIOS_SIZE (512 * 1024)
+#define PSX_SCRATCHPAD_SIZE 1024
+#define PSX_IO_SIZE 4096
+#define PSX_TRACE_LINES 6
+
+#define PSX_IRQ_VBLANK    (1 << 0)
+#define PSX_IRQ_GPU       (1 << 1)
+#define PSX_IRQ_CDROM     (1 << 2)
+#define PSX_IRQ_DMA       (1 << 3)
+#define PSX_IRQ_TIMER0    (1 << 4)
+#define PSX_IRQ_TIMER1    (1 << 5)
+#define PSX_IRQ_TIMER2    (1 << 6)
+#define PSX_IRQ_SIO       (1 << 7)
+#define PSX_IRQ_SPU       (1 << 8)
+#define PSX_IRQ_EXTERNAL  (1 << 9)
+
+#define PSX_TIMER_MODE_IRQ    (1 << 10)
+#define PSX_TIMER_MODE_REPEAT (1 << 9)
+#define PSX_TIMER_MODE_32BIT (1 << 8)
+
+typedef struct {
+    uint32_t gpr[32];
+    uint32_t cop0[32];
+    uint32_t hi;
+    uint32_t lo;
+    uint32_t pc;
+    uint32_t next_pc;
+} PsxCpuState;
+
+typedef struct {
+    uint32_t count;
+    uint32_t compare;
+    uint32_t mode;
+    uint32_t target;
+} PsxTimer;
+
+typedef struct {
+    uint16_t error_code;
+    uint16_t test_count;
+    uint32_t cycles_at_error;
+    uint32_t pc_at_error;
+    uint32_t opcode_at_error;
+    char error_description[128];
+} PsxTestResult;
+
+typedef struct {
+    PsxCpuState cpu;
+    uint8_t ram_internal[PSX_RAM_SIZE];
+    uint8_t *ram;
+    size_t ram_size;
+    char ram_backend_name[16];
+    uint8_t bios[PSX_BIOS_SIZE];
+    uint8_t scratchpad[PSX_SCRATCHPAD_SIZE];
+    uint32_t io_regs[PSX_IO_SIZE / sizeof(uint32_t)];
+    uint64_t cycles;
+    bool halted;
+    bool bios_loaded;
+    uint32_t last_pc;
+    uint32_t last_opcode;
+    uint32_t halt_pc;
+    char halt_reason[64];
+    char last_disasm[48];
+    char trace[PSX_TRACE_LINES][48];
+    uint32_t trace_pos;
+    uint32_t trace_count;
+    uint32_t last_io_addr;
+    uint32_t last_io_value;
+    bool last_io_write;
+    uint16_t pending_irqs;
+    PsxTimer timers[3];
+    PsxTestResult test_result;
+    bool test_mode;
+} PsxState;
+
+void psx_init(PsxState *psx);
+void psx_reset(PsxState *psx);
+void psx_load_demo(PsxState *psx);
+void psx_load_raw_bin(PsxState *psx, const uint8_t *data, size_t size, uint32_t load_addr, uint32_t entry_pc);
+bool psx_load_bios(PsxState *psx, const uint8_t *data, size_t size);
+void psx_boot_bios(PsxState *psx);
+void psx_use_internal_ram(PsxState *psx);
+bool psx_set_ram_backing(PsxState *psx, uint8_t *buffer, size_t size, const char *backend_name);
+void psx_step(PsxState *psx);
+uint32_t psx_run(PsxState *psx, uint32_t max_steps);
+uint32_t psx_read32(const PsxState *psx, uint32_t addr);
+void psx_write32(PsxState *psx, uint32_t addr, uint32_t value);
+void psx_trigger_irq(PsxState *psx, uint16_t irq_mask);
+void psx_acknowledge_irq(PsxState *psx, uint16_t irq_mask);
+bool psx_check_irq_pending(const PsxState *psx);
+void psx_step_timers(PsxState *psx, uint32_t cycles);
+void psx_init_test_mode(PsxState *psx);
+void psx_record_error(PsxState *psx, uint16_t error_code, const char *description);
+
+#endif
