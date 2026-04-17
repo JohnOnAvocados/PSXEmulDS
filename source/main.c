@@ -8,6 +8,9 @@
 #include "psx.h"
 #include "psx_exe.h"
 #include "psx_slot2.h"
+#include "psx_cdrom.h"
+#include "psx_menu.h"
+#include "psx_gpu.h"
 
 typedef struct {
     bool fat_ready;
@@ -46,6 +49,8 @@ static PrintConsole g_top_console;
 static PrintConsole g_bottom_console;
 static bool g_auto_run = false;
 static uint32_t g_run_batch = 128;
+static GameMenu g_menu;
+static bool g_emulator_mode = false;
 
 static void draw_trace(const PsxState *psx) {
     uint32_t i;
@@ -389,6 +394,77 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
     iprintf("%s\n", boot->status_line);
 }
 
+static void draw_video_output(void) {
+    if (g_psx.gpu == NULL) return;
+    
+    uint16_t *vram = g_psx.gpu->vram;
+    uint16_t display_x = g_psx.gpu->display_x;
+    uint16_t display_y = g_psx.gpu->display_y;
+    
+    uint16_t *top_screen = (uint16_t*)BG_GFX;
+    
+    for (int y = 0; y < 192; y++) {
+        for (int x = 0; x < 256; x++) {
+            int src_y = (display_y + y) % PSX_GPU_VRAM_HEIGHT;
+            int src_x = (display_x + x) % PSX_GPU_VRAM_WIDTH;
+            uint16_t pixel = vram[src_y * PSX_GPU_VRAM_WIDTH + src_x];
+            
+            top_screen[y * 256 + x] = pixel;
+        }
+    }
+}
+
+static void run_menu_mode(void) {
+    consoleSelect(&g_bottom_console);
+    consoleClear();
+    
+    menu_init(&g_menu);
+    menu_scan_games(&g_menu);
+    menu_draw(&g_menu);
+    
+    while (g_menu.menu_active && !g_emulator_mode) {
+        scanKeys();
+        uint32_t keys = keysDown();
+        
+        if (keys & KEY_UP) {
+            menu_navigate(&g_menu, -1);
+            menu_draw(&g_menu);
+        }
+        if (keys & KEY_DOWN) {
+            menu_navigate(&g_menu, 1);
+            menu_draw(&g_menu);
+        }
+        
+        if (keys & KEY_A) {
+            const char *selected = menu_get_selected(&g_menu);
+            if (selected) {
+                consoleSelect(&g_top_console);
+                consoleClear();
+                iprintf("Loading: %s\n", selected);
+                consoleSelect(&g_bottom_console);
+                
+                cdrom_load_image(g_psx.cdrom, selected);
+                
+                psx_reset(&g_psx);
+                psx_boot_bios(&g_psx);
+                
+                videoSetMode(MODE_5_2D);
+                vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
+                
+                g_emulator_mode = true;
+                return;
+            }
+        }
+        
+        if (keys & KEY_B) {
+            g_menu.menu_active = false;
+            return;
+        }
+        
+        swiWaitForVBlank();
+    }
+}
+
 int main(void) {
     int total_steps = 0;
 
@@ -402,12 +478,26 @@ int main(void) {
     consoleInit(&g_top_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);
     consoleInit(&g_bottom_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
 
-    draw_startup_message("Video initialized.");
+    draw_startup_message("Video initialized. FAT init...");
 
-    memset(&g_boot, 0, sizeof(g_boot));
-    g_auto_run = false;
-    g_run_batch = 128;
-    try_load_exe(&g_psx, &g_boot);
+    if (!fatInitDefault()) {
+        draw_startup_message("FAT init failed!");
+        while (1) swiWaitForVBlank();
+    }
+    
+    psx_init(&g_psx);
+    g_boot.fat_ready = true;
+    g_boot.bios_loaded = psx_load_bios(&g_psx, NULL, 0);
+    
+    run_menu_mode();
+    
+    if (!g_emulator_mode) {
+        memset(&g_boot, 0, sizeof(g_boot));
+        g_auto_run = false;
+        g_run_batch = 128;
+        try_load_exe(&g_psx, &g_boot);
+    }
+    
     draw_state(&g_psx, &g_boot, total_steps);
 
     while (1) {
@@ -439,15 +529,18 @@ int main(void) {
         }
 
         if (keys_pressed & KEY_L) {
-            if (g_run_batch > 1) {
-                g_run_batch >>= 1;
+            if (g_test_suite.test_mode && g_test_suite.total_tests > 0) {
+                test_save_results(&g_test_suite);
+                snprintf(g_boot.status_line, sizeof(g_boot.status_line),
+                        "Saved %lu test results",
+                        (unsigned long)g_test_suite.total_tests);
+                redraw = true;
             }
-            redraw = true;
         }
 
         if (keys_pressed & KEY_R) {
-            if (g_run_batch < 4096) {
-                g_run_batch <<= 1;
+            if (g_run_batch > 1) {
+                g_run_batch >>= 1;
             }
             redraw = true;
         }
@@ -456,7 +549,10 @@ int main(void) {
             if (g_test_suite.total_tests > 0) {
                 test_save_results(&g_test_suite);
             }
-            try_load_exe(&g_psx, &g_boot);
+            run_menu_mode();
+            if (!g_emulator_mode) {
+                try_load_exe(&g_psx, &g_boot);
+            }
             total_steps = 0;
             g_auto_run = false;
             redraw = true;
@@ -476,20 +572,14 @@ int main(void) {
             }
             redraw = true;
         }
-
-        if (keys_pressed & KEY_L) {
-            if (g_test_suite.test_mode && g_test_suite.total_tests > 0) {
-                test_save_results(&g_test_suite);
-                snprintf(g_boot.status_line, sizeof(g_boot.status_line),
-                        "Saved %lu test results",
-                        (unsigned long)g_test_suite.total_tests);
-                redraw = true;
-            }
-        }
-
+        
         if (g_auto_run && !g_psx.halted) {
             total_steps += (int)psx_run(&g_psx, g_run_batch);
             redraw = true;
+        }
+
+        if (g_emulator_mode && !g_test_suite.test_mode) {
+            draw_video_output();
         }
 
         if (redraw) {

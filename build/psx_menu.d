@@ -1,4 +1,5 @@
-main.o: C:/DS_Homebrew/PSXEmulDS/source/main.c \
+psx_menu.o: C:/DS_Homebrew/PSXEmulDS/source/psx_menu.c \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_menu.h \
  C:/devkitPro/libnds/include/nds.h C:/devkitPro/calico/include/calico.h \
  C:/devkitPro/calico/include/calico/types.h \
  C:/devkitPro/calico/include/calico/arm/psr.h \
@@ -110,15 +111,8 @@ main.o: C:/DS_Homebrew/PSXEmulDS/source/main.c \
  C:/devkitPro/libnds/include/nds/arm9/sprite.h \
  C:/devkitPro/libnds/include/nds/arm9/trig_lut.h \
  C:/devkitPro/libnds/include/nds/arm9/video.h \
- C:/devkitPro/libnds/include/nds/arm9/videoGL.h \
- C:/devkitPro/libnds/include/fat.h C:/devkitPro/libnds/include/dvm.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx_exe.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx_slot2.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx_menu.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h
+ C:/devkitPro/libnds/include/nds/arm9/videoGL.h
+C:/DS_Homebrew/PSXEmulDS/include/psx_menu.h:
 C:/devkitPro/libnds/include/nds.h:
 C:/devkitPro/calico/include/calico.h:
 C:/devkitPro/calico/include/calico/types.h:
@@ -232,12 +226,3 @@ C:/devkitPro/libnds/include/nds/arm9/sprite.h:
 C:/devkitPro/libnds/include/nds/arm9/trig_lut.h:
 C:/devkitPro/libnds/include/nds/arm9/video.h:
 C:/devkitPro/libnds/include/nds/arm9/videoGL.h:
-C:/devkitPro/libnds/include/fat.h:
-C:/devkitPro/libnds/include/dvm.h:
-C:/DS_Homebrew/PSXEmulDS/include/psx.h:
-C:/DS_Homebrew/PSXEmulDS/include/psx_exe.h:
-C:/DS_Homebrew/PSXEmulDS/include/psx.h:
-C:/DS_Homebrew/PSXEmulDS/include/psx_slot2.h:
-C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h:
-C:/DS_Homebrew/PSXEmulDS/include/psx_menu.h:
-C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h:
