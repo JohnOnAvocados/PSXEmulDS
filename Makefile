@@ -15,7 +15,16 @@ TARGET		:=	psxnds
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES		:=	include
+ICON		:=	icon.png
+
+#---------------------------------------------------------------------------------
+# NDS icon and banner (auto-converted from PNG)
+#---------------------------------------------------------------------------------
+ifneq ($(wildcard $(ICON)),)
+	GFX		:=	$(OUTPUT).bmp
+	ICONFLAGS	:=	--icon $(ICON)
+endif
 
 #---------------------------------------------------------------------------------
 # Build flags
