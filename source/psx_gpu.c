@@ -378,6 +378,10 @@ void gpu_update(PsxGpuState *gpu, uint32_t cycles) {
 }
 
 void gpu_render(PsxGpuState *gpu, uint16_t *framebuffer, int width, int height) {
+    if (!gpu->vram_dirty && gpu->display_enable == 0) {
+        return;
+    }
+    
     int src_x = gpu->display_x;
     int src_y = gpu->display_y;
     int src_w = gpu->display_w;
@@ -395,4 +399,6 @@ void gpu_render(PsxGpuState *gpu, uint16_t *framebuffer, int width, int height) 
             framebuffer[y * width + x] = gpu->vram[src_row * PSX_GPU_VRAM_WIDTH + src_col];
         }
     }
+    
+    gpu->vram_dirty = false;
 }
