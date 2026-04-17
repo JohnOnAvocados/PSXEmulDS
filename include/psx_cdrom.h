@@ -79,6 +79,8 @@ typedef struct PsxCdromState {
     uint8_t *cd_buffer;
     size_t cd_buffer_size;
     uint32_t cd_sectors;
+    uint8_t track_count;
+    uint32_t track_lba[4];
 } PsxCdromState;
 
 void cdrom_init(PsxCdromState *cdrom);

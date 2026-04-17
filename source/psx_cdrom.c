@@ -55,6 +55,48 @@ void cdrom_load_image(PsxCdromState *cdrom, const char *path) {
     strncpy(cdrom->image_path, path, sizeof(cdrom->image_path) - 1);
     cdrom->image_path[sizeof(cdrom->image_path) - 1] = '\0';
     
+    char cue_path[256];
+    strncpy(cue_path, path, sizeof(cue_path) - 1);
+    char *dot = strrchr(cue_path, '.');
+    if (dot) {
+        strcpy(dot, ".cue");
+    }
+    
+    if (strstr(path, ".bin") || strstr(path, ".BIN")) {
+        FILE *cue_file = fopen(cue_path, "r");
+        if (cue_file) {
+            char line[256];
+            uint32_t current_lba = 0;
+            cdrom->track_count = 0;
+            
+            while (fgets(line, sizeof(line), cue_file) && cdrom->track_count < 4) {
+                if (strncmp(line, "FILE", 4) == 0) {
+                    char *p = strchr(line, '"');
+                    if (p) {
+                        char *end_quote = strchr(p + 1, '"');
+                        if (end_quote) *end_quote = '\0';
+                    }
+                }
+                if (strncmp(line, "TRACK", 5) == 0) {
+                    cdrom->track_count++;
+                }
+                if (strncmp(line, "INDEX", 5) == 0) {
+                    char *nums = strchr(line, ' ');
+                    if (nums) {
+                        while (*nums && *nums < '0' || *nums > '9') nums++;
+                        uint32_t mm = 0, ss = 0, ff = 0;
+                        sscanf(nums, "%u:%u:%u", &mm, &ss, &ff);
+                        current_lba = mm * 60 * 75 + ss * 75 + ff;
+                        if (cdrom->track_count > 0 && cdrom->track_count <= 4) {
+                            cdrom->track_lba[cdrom->track_count - 1] = current_lba;
+                        }
+                    }
+                }
+            }
+            fclose(cue_file);
+        }
+    }
+    
     cdrom->cd_image = fopen(path, "rb");
     if (cdrom->cd_image) {
         fseek(cdrom->cd_image, 0, SEEK_END);
@@ -151,18 +193,31 @@ void cdrom_exec_command(PsxCdromState *cdrom, uint8_t cmd) {
     case PSX_CDROM_CMD_PAUSE:
         cdrom->reading = false;
         cdrom->playing = false;
+        cdrom->seeking = false;
         cdrom_push_response(cdrom, PSX_CDROM_RESPONSE_ACK);
         cdrom->status &= ~PSX_CDROM_STATUS_BUSY;
         cdrom->status &= ~PSX_CDROM_STATUS_READ;
         cdrom->status |= PSX_CDROM_STATUS_TRANS;
+        
+        cdrom_push_response(cdrom, 0x02);
+        cdrom->status = PSX_CDROM_STATUS_TRANS;
         break;
         
     case PSX_CDROM_CMD_INIT:
         cdrom->reading = false;
         cdrom->playing = false;
+        cdrom->seeking = false;
         cdrom->current_location = 0;
         cdrom->target_location = 0;
+        cdrom->index = 0;
+        cdrom->response_count = 0;
+        cdrom->data_count = 0;
         cdrom_push_response(cdrom, PSX_CDROM_RESPONSE_ACK);
+        
+        cdrom_push_response(cdrom, 0x02);
+        cdrom_push_response(cdrom, dec_to_bcd((cdrom->cd_sectors / 75 / 60) & 0xFF));
+        cdrom_push_response(cdrom, dec_to_bcd((cdrom->cd_sectors / 75) % 60));
+        cdrom_push_response(cdrom, dec_to_bcd(cdrom->cd_sectors % 75));
         cdrom->status = PSX_CDROM_STATUS_BUSY | PSX_CDROM_STATUS_TRANS;
         break;
         

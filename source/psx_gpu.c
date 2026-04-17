@@ -68,6 +68,83 @@ static void gpu_draw_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, 
     gpu_draw_line(gpu, x2, y2, x0, y0, color);
 }
 
+static void gpu_fill_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, int x2, int y2, uint16_t color) {
+    if (y0 > y1) {
+        int temp;
+        temp = x0; x0 = x1; x1 = temp;
+        temp = y0; y0 = y1; y1 = temp;
+    }
+    if (y0 > y2) {
+        int temp;
+        temp = x0; x0 = x2; x2 = temp;
+        temp = y0; y0 = y2; y2 = temp;
+    }
+    if (y1 > y2) {
+        int temp;
+        temp = x1; x1 = x2; x2 = temp;
+        temp = y1; y1 = y2; y2 = temp;
+    }
+    
+    int total_height = y2 - y0;
+    if (total_height == 0) return;
+    
+    for (int y = y0; y <= y2; y++) {
+        float t_top, t_bottom;
+        
+        if (y < y1) {
+            t_top = (float)(y - y0) / (float)(y1 - y0);
+        } else {
+            t_top = (float)(y - y1) / (float)(y2 - y1);
+        }
+        
+        if (y2 != y0) {
+            t_bottom = (float)(y - y0) / (float)(y2 - y0);
+        } else {
+            t_bottom = 0;
+        }
+        
+        int x_start = x0 + (int)((float)(x1 - x0) * t_top);
+        int x_end = x0 + (int)((float)(x2 - x0) * t_bottom);
+        
+        if (x_start > x_end) {
+            int temp = x_start;
+            x_start = x_end;
+            x_end = temp;
+        }
+        
+        for (int x = x_start; x <= x_end; x++) {
+            gpu_set_pixel(gpu, x, y, color);
+        }
+    }
+}
+
+static void gpu_fill_line(PsxGpuState *gpu, int x0, int y0, int x1, int y1, uint16_t color) {
+    int dx = x1 - x0;
+    int dy = y1 - y0;
+    int steps = dx > dy ? dx : dy;
+    
+    if (steps < 0) {
+        steps = -steps;
+    }
+    
+    if (steps == 0) {
+        gpu_set_pixel(gpu, x0, y0, color);
+        return;
+    }
+    
+    float inc_x = (float)dx / (float)steps;
+    float inc_y = (float)dy / (float)steps;
+    
+    float x = x0;
+    float y = y0;
+    
+    for (int i = 0; i <= steps; i++) {
+        gpu_set_pixel(gpu, (int)x, (int)y, color);
+        x += inc_x;
+        y += inc_y;
+    }
+}
+
 static void gpu_fill_rect(PsxGpuState *gpu, int x, int y, int w, int h, uint16_t color) {
     for (int j = 0; j < h; j++) {
         for (int i = 0; i < w; i++) {
@@ -135,7 +212,7 @@ void gpu_exec_gp0(PsxGpuState *gpu, uint8_t cmd) {
             uint8_t b = gpu->gp0_params[8] & 0xFF;
             uint16_t color = gpu_rgb555(r, g, b);
             
-            gpu_draw_triangle(gpu, x0, y0, x1, y1, x2, y2, color);
+            gpu_fill_triangle(gpu, x0, y0, x1, y1, x2, y2, color);
         }
         break;
         
@@ -152,7 +229,7 @@ void gpu_exec_gp0(PsxGpuState *gpu, uint8_t cmd) {
             uint8_t b = gpu->gp0_params[6] & 0xFF;
             uint16_t color = gpu_rgb555(r, g, b);
             
-            gpu_draw_line(gpu, x0, y0, x1, y1, color);
+            gpu_fill_line(gpu, x0, y0, x1, y1, color);
         }
         break;
         
@@ -172,13 +249,46 @@ void gpu_exec_gp0(PsxGpuState *gpu, uint8_t cmd) {
         }
         break;
         
+    case 0x40:
+    case 0x44:
+    case 0x48:
+    case 0x4C:
+        if (gpu->gp0_param_count >= 2) {
+            int src_x = gpu->gp0_params[0] & 0x3FF;
+            int src_y = gpu->gp0_params[1] & 0x1FF;
+            int w = (gpu->gp0_params[2] & 0xFFFF);
+            int h = (gpu->gp0_params[2] >> 16) & 0xFFFF;
+            if (w == 0) w = 256;
+            if (h == 0) h = 256;
+            int dst_x = gpu->gp0_params[3] & 0x3FF;
+            int dst_y = gpu->gp0_params[4] & 0x1FF;
+            
+            for (int row = 0; row < h && (src_y + row) < PSX_GPU_VRAM_HEIGHT; row++) {
+                for (int col = 0; col < w && (src_x + col) < PSX_GPU_VRAM_WIDTH; col++) {
+                    uint16_t pixel = gpu->vram[(src_y + row) * PSX_GPU_VRAM_WIDTH + (src_x + col)];
+                    gpu->vram[(dst_y + row) * PSX_GPU_VRAM_WIDTH + (dst_x + col)] = pixel;
+                }
+            }
+            gpu->vram_dirty = true;
+        }
+        break;
+        
     case 0xA0:
         if (gpu->gp0_param_count >= 2) {
             int x = gpu->gp0_params[0] & 0x3FF;
             int y = gpu->gp0_params[1] & 0x1FF;
-            int w = (gpu->gp0_params[2] & 0xFFFF);
+            int w = gpu->gp0_params[2] & 0xFFFF;
             int h = (gpu->gp0_params[2] >> 16) & 0xFFFF;
+            if (w == 0) w = 256;
+            if (h == 0) h = 256;
             
+            uint16_t *src = (uint16_t*)&gpu->gp0_data;
+            for (int row = 0; row < h && (y + row) < PSX_GPU_VRAM_HEIGHT; row++) {
+                for (int col = 0; col < w && (x + col) < PSX_GPU_VRAM_WIDTH; col++) {
+                    gpu->vram[(y + row) * PSX_GPU_VRAM_WIDTH + (x + col)] = *src++;
+                }
+            }
+            gpu->vram_dirty = true;
         }
         break;
         
