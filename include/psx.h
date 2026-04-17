@@ -5,11 +5,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define PSX_RAM_SIZE (2 * 1024 * 1024)
+#define PSX_RAM_SIZE (1 * 1024 * 1024)
 #define PSX_BIOS_SIZE (512 * 1024)
 #define PSX_SCRATCHPAD_SIZE 1024
 #define PSX_IO_SIZE 4096
-#define PSX_TRACE_LINES 6
+#define PSX_TRACE_LINES 2
 
 #define PSX_IRQ_VBLANK    (1 << 0)
 #define PSX_IRQ_GPU       (1 << 1)
@@ -51,6 +51,10 @@ typedef struct {
     char error_description[128];
 } PsxTestResult;
 
+struct PsxGpuState;
+struct PsxDmaState;
+struct PsxCdromState;
+
 typedef struct {
     PsxCpuState cpu;
     uint8_t ram_internal[PSX_RAM_SIZE];
@@ -78,6 +82,10 @@ typedef struct {
     PsxTimer timers[3];
     PsxTestResult test_result;
     bool test_mode;
+    struct PsxGpuState *gpu;
+    struct PsxDmaState *dma;
+    struct PsxCdromState *cdrom;
+    uint32_t vblank_counter;
 } PsxState;
 
 void psx_init(PsxState *psx);
@@ -98,5 +106,10 @@ bool psx_check_irq_pending(const PsxState *psx);
 void psx_step_timers(PsxState *psx, uint32_t cycles);
 void psx_init_test_mode(PsxState *psx);
 void psx_record_error(PsxState *psx, uint16_t error_code, const char *description);
+void psx_init_gpu(PsxState *psx);
+void psx_init_dma(PsxState *psx);
+void psx_init_cdrom(PsxState *psx);
+void psx_update_peripherals(PsxState *psx, uint32_t cycles);
+void psx_render_frame(PsxState *psx);
 
 #endif

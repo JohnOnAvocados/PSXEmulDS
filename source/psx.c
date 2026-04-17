@@ -1,4 +1,7 @@
 #include "psx.h"
+#include "psx_gpu.h"
+#include "psx_dma.h"
+#include "psx_cdrom.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +14,10 @@ enum {
     PSX_IO_BASE = 0x1F801000,
     PSX_BIOS_BASE = 0x1FC00000,
 };
+
+#define PSX_GPU_BASE_ADDR 0x1F801810
+#define PSX_CDROM_BASE_ADDR 0x1F801800
+#define PSX_DMA_BASE_ADDR 0x1F801080
 
 static const char *const psx_reg_names[32] = {
     "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
@@ -621,6 +628,9 @@ static void psx_format_instruction(char *out, size_t out_size, uint32_t pc, uint
 void psx_init(PsxState *psx) {
     memset(psx, 0, sizeof(*psx));
     psx_use_internal_ram(psx);
+    psx_init_gpu(psx);
+    psx_init_dma(psx);
+    psx_init_cdrom(psx);
     psx_reset(psx);
 }
 
@@ -770,6 +780,7 @@ uint32_t psx_read32(const PsxState *psx, uint32_t addr) {
     uint32_t scratch_addr = psx_translate_scratchpad(addr);
     uint32_t io_addr = psx_translate_io(addr);
     uint32_t bios_addr = psx_translate_bios(addr);
+    
     if (ram_addr != UINT32_MAX && ram_addr + 3 < psx->ram_size) {
         return read_le32(&psx->ram[ram_addr]);
     }
@@ -779,7 +790,24 @@ uint32_t psx_read32(const PsxState *psx, uint32_t addr) {
     }
 
     if (io_addr != UINT32_MAX && io_addr + 3 < PSX_IO_SIZE) {
+        if (psx->dma && addr >= PSX_DMA_BASE_ADDR && addr < PSX_DMA_BASE_ADDR + 0x80) {
+            return dma_read32(psx->dma, addr);
+        }
         return psx->io_regs[io_addr >> 2];
+    }
+    
+    if (addr >= PSX_GPU_BASE_ADDR && addr < PSX_GPU_BASE_ADDR + 0x10) {
+        if (psx->gpu) {
+            return gpu_read32(psx->gpu, addr);
+        }
+        return 0;
+    }
+    
+    if (addr >= PSX_CDROM_BASE_ADDR && addr < PSX_CDROM_BASE_ADDR + 0x80) {
+        if (psx->cdrom) {
+            return cdrom_read8(psx->cdrom, addr);
+        }
+        return 0;
     }
 
     if (bios_addr != UINT32_MAX && bios_addr + 3 < PSX_BIOS_SIZE) {
@@ -805,8 +833,26 @@ void psx_write32(PsxState *psx, uint32_t addr, uint32_t value) {
     }
 
     if (io_addr != UINT32_MAX && io_addr + 3 < PSX_IO_SIZE) {
+        if (psx->dma && addr >= PSX_DMA_BASE_ADDR && addr < PSX_DMA_BASE_ADDR + 0x80) {
+            dma_write32(psx->dma, addr, value);
+            return;
+        }
         psx->io_regs[io_addr >> 2] = value;
         psx_note_io(psx, addr, value, true);
+    }
+    
+    if (addr >= PSX_GPU_BASE_ADDR && addr < PSX_GPU_BASE_ADDR + 0x10) {
+        if (psx->gpu) {
+            gpu_write32(psx->gpu, addr, value);
+        }
+        return;
+    }
+    
+    if (addr >= PSX_CDROM_BASE_ADDR && addr < PSX_CDROM_BASE_ADDR + 0x80) {
+        if (psx->cdrom) {
+            cdrom_write8(psx->cdrom, addr, value);
+        }
+        return;
     }
 }
 
@@ -1252,4 +1298,47 @@ uint32_t psx_run(PsxState *psx, uint32_t max_steps) {
     }
 
     return executed;
+}
+
+static PsxGpuState g_gpu;
+static PsxDmaState g_dma;
+static PsxCdromState g_cdrom;
+
+void psx_init_gpu(PsxState *psx) {
+    memset(&g_gpu, 0, sizeof(g_gpu));
+    psx->gpu = &g_gpu;
+}
+
+void psx_init_dma(PsxState *psx) {
+    memset(&g_dma, 0, sizeof(g_dma));
+    psx->dma = &g_dma;
+}
+
+void psx_init_cdrom(PsxState *psx) {
+    memset(&g_cdrom, 0, sizeof(g_cdrom));
+    psx->cdrom = &g_cdrom;
+}
+
+void psx_update_peripherals(PsxState *psx, uint32_t cycles) {
+    if (psx->gpu) {
+        gpu_update(psx->gpu, cycles);
+    }
+    if (psx->dma) {
+        dma_update(psx->dma, cycles);
+    }
+    if (psx->cdrom) {
+        cdrom_update(psx->cdrom, cycles);
+    }
+    
+    psx_step_timers(psx, cycles);
+    
+    psx->vblank_counter += cycles;
+    if (psx->vblank_counter >= 33333 * 3) {
+        psx->vblank_counter = 0;
+        psx_trigger_irq(psx, PSX_IRQ_VBLANK);
+    }
+}
+
+void psx_render_frame(PsxState *psx) {
+    (void)psx;
 }
