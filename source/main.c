@@ -507,58 +507,61 @@ int main(void) {
     consoleInit(&g_top_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);
     consoleInit(&g_bottom_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
 
-    draw_startup_message("Video initialized. FAT init...");
+    consoleSelect(&g_bottom_console);
+    consoleClear();
+    iprintf("PSXEmulDS Debug\n");
+    iprintf("================\n");
+    iprintf("Testing FAT init...\n");
 
     g_boot.fat_ready = fatInitDefault();
 
-    if (!g_boot.fat_ready) {
-        iprintf("Trying fallback mode...");
-        consoleInit(NULL, 0, BgType_Text4bpp, BgSize_T_256x256, 0, 0, false, false);
+    iprintf("fatInitDefault: ret=%d\n", g_boot.fat_ready);
+
+    if (g_boot.fat_ready) {
+        FILE *test = fopen("test.txt", "w");
+        if (test) {
+            iprintf("fopen(w): OK\n");
+            fclose(test);
+            remove("test.txt");
+        } else {
+            iprintf("fopen(w): FAIL\n");
+        }
     } else {
-        iprintf("FAT ready: %d", g_boot.fat_ready);
+        iprintf("DLDI may not be patched\n");
+        iprintf("by flashcard kernel\n");
     }
 
     debug_init();
     debug_log("=== PSXEmulDS Boot ===");
-    debug_log("FAT: %d", g_boot.fat_ready);
+    debug_log("FAT result: %d", g_boot.fat_ready);
 
     psx_init(&g_psx);
-    debug_log("PSX initialized");
+    debug_log("PSX init done");
 
     slot2_init();
     slot2_detect();
     Slot2Device *slot2 = slot2_get_device();
 
-    debug_log("Slot-2 type: %d (%s)", slot2->type, slot2->name);
-    debug_log("Slot-2 buffer: %p", slot2->buffer);
-    debug_log("Slot-2 size: %lu", (unsigned long)slot2->size);
+    debug_log("Slot2: type=%d", slot2->type);
 
     if (slot2->type == SLOT2_SUPERCHIS) {
-        char status_msg[64];
-        snprintf(status_msg, sizeof(status_msg), "SuperChis DETECTED (%dMB)!",
-                 32);
-        draw_startup_message(status_msg);
-        debug_log("Switching to Slot-2 RAM");
+        debug_log("Using Slot-2 RAM");
         psx_use_slot2_ram(&g_psx, slot2->buffer, slot2->size);
     } else {
-        char status_msg[64];
-        snprintf(status_msg, sizeof(status_msg), "Slot-2: %s",
-                 slot2->name);
-        draw_startup_message(status_msg);
         debug_log("Using internal RAM");
     }
 
-    debug_log("Loading BIOS (if present)...");
+    debug_log("Loading BIOS...");
     g_boot.bios_loaded = psx_load_bios(&g_psx, NULL, 0);
-    debug_log("BIOS loaded: %d", g_boot.bios_loaded);
+    debug_log("BIOS: %d", g_boot.bios_loaded);
 
-    {
-        char ram_msg[64];
-        snprintf(ram_msg, sizeof(ram_msg), "PS1 RAM: %s (%lu KB)",
-                 g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
-        draw_startup_message(ram_msg);
-        debug_log("RAM backend: %s (%lu KB)", g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
-    }
+    consoleSelect(&g_top_console);
+    consoleClear();
+    iprintf("PS1 Emulator\n");
+    iprintf("FAT: %s\n", g_boot.fat_ready ? "OK" : "FAIL");
+    iprintf("BIOS: %s\n", g_boot.bios_loaded ? "LOADED" : "NONE");
+    iprintf("RAM: %s (%luKB)\n", g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
+
     swiWaitForVBlank();
     swiWaitForVBlank();
     swiWaitForVBlank();
