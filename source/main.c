@@ -395,22 +395,32 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
 }
 
 static void draw_video_output(void) {
-    if (g_psx.gpu == NULL) return;
+    if (g_psx.gpu == NULL) {
+        consoleSelect(&g_top_console);
+        consoleClear();
+        iprintf("GPU NOT INITIALIZED");
+        return;
+    }
     
     uint16_t *vram = g_psx.gpu->vram;
     uint16_t display_x = g_psx.gpu->display_x;
     uint16_t display_y = g_psx.gpu->display_y;
     
-    uint16_t *top_screen = (uint16_t*)BG_GFX;
-    
+    int render_count = 0;
     for (int y = 0; y < 192; y++) {
         for (int x = 0; x < 256; x++) {
             int src_y = (display_y + y) % PSX_GPU_VRAM_HEIGHT;
             int src_x = (display_x + x) % PSX_GPU_VRAM_WIDTH;
             uint16_t pixel = vram[src_y * PSX_GPU_VRAM_WIDTH + src_x];
-            
-            top_screen[y * 256 + x] = pixel;
+            if (pixel != 0) render_count++;
+            (BG_GFX)[y * 256 + x] = pixel;
         }
+    }
+    
+    if (render_count == 0) {
+        consoleSelect(&g_top_console);
+        consoleClear();
+        iprintf("Empty VRAM (%d pixels)", render_count);
     }
 }
 
