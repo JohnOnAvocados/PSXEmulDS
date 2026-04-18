@@ -428,9 +428,11 @@ static void draw_video_output(void) {
 
     consoleSelect(&g_top_console);
     consoleClear();
-    iprintf("VRAM: first=%04x mid=%04x", first_pixel, mid_pixel);
-    iprintf("last=%04x non-zero=%d", last_pixel, first_nonzero);
-    iprintf("pixels: %d PC=%08lx", render_count, g_psx.cpu.pc);
+    iprintf("VRAM DEBUG");
+    iprintf("first=%04x mid=%04x", (unsigned int)first_pixel, (unsigned int)mid_pixel);
+    iprintf("last=%04x nzero=%d", (unsigned int)last_pixel, first_nonzero);
+    iprintf("px=%d PC=%08lx", render_count, (unsigned long)g_psx.cpu.pc);
+    iprintf("gpu=%p mode=%d", (void*)g_psx.gpu, (int)g_emulator_mode);
 }
 
 static void run_menu_mode(void) {
