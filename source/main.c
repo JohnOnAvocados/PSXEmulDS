@@ -236,7 +236,14 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
     };
     static const char *const raw_bin_path = "/psx/demo.bin";
     static const char *const bios_paths[] = {
+        "/psx/SCPH1001.BIN",
         "/psx/scph1001.bin",
+        "/psx/SCPH1000.BIN",
+        "/psx/scph1000.bin",
+        "/PSX/SCPH1001.BIN",
+        "/PSX/scph1001.bin",
+        "/PSX/SCPH1000.BIN",
+        "/PSX/scph1000.bin",
         "/psx/bios.bin",
     };
     size_t i;
