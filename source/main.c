@@ -485,6 +485,21 @@ int main(void) {
         while (1) swiWaitForVBlank();
     }
     
+    slot2_init();
+    Slot2Device *slot2 = slot2_get_device();
+    if (slot2_detect()) {
+        char status_msg[64];
+        snprintf(status_msg, sizeof(status_msg), "Slot-2: %s (%lu MB)", 
+                 slot2->name, (unsigned long)(slot2->size / 1024 / 1024));
+        draw_startup_message(status_msg);
+        
+        if (slot2->buffer != NULL && slot2->size >= PSX_RAM_SIZE) {
+            psx_use_slot2_ram(&g_psx, slot2->buffer, slot2->size);
+        }
+    } else {
+        draw_startup_message("Using internal RAM");
+    }
+    
     psx_init(&g_psx);
     g_boot.fat_ready = true;
     g_boot.bios_loaded = psx_load_bios(&g_psx, NULL, 0);

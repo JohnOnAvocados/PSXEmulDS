@@ -3,6 +3,9 @@
 #include <nds.h>
 #include <string.h>
 
+#define SUPERCHIS_DETECT_ADDR    ((volatile uint16_t*)0x0A000000)
+#define SUPERCHIS_SDRAM_ADDR    ((volatile uint32_t*)0x0C000000)
+
 static Slot2Device g_slot2;
 
 void slot2_init(void) {
@@ -11,6 +14,9 @@ void slot2_init(void) {
     g_slot2.buffer = NULL;
     g_slot2.size = 0;
     g_slot2.initialized = false;
+    g_slot2.sdram_base = 0x0C000000;
+    g_slot2.fram_base = 0x0A800000;
+    g_slot2.nor_base = 0x08000000;
 }
 
 void slot2_deinit(void) {
@@ -32,12 +38,26 @@ bool slot2_detect(void) {
     
     g_slot2.initialized = true;
     
-    volatile uint16_t *slot2_reg = (volatile uint16_t*)0x0A000000;
     uint16_t test_val = 0x1234;
-    *slot2_reg = test_val;
-    uint16_t readback = *slot2_reg;
+    *SUPERCHIS_DETECT_ADDR = test_val;
+    uint16_t readback = *SUPERCHIS_DETECT_ADDR;
     
     if (readback == test_val) {
+        volatile uint32_t *sdram = SUPERCHIS_SDRAM_ADDR;
+        sdram[0] = 0xDEADBEEF;
+        sdram[1] = 0xCAFEBABE;
+        
+        if (sdram[0] == 0xDEADBEEF && sdram[1] == 0xCAFEBABE) {
+            g_slot2.type = SLOT2_SUPERCHIS;
+            g_slot2.size = SLOT2_SUPERCHIS_SDRAM;
+            g_slot2.writable = true;
+            strncpy(g_slot2.name, "SuperChis Prime", sizeof(g_slot2.name) - 1);
+            g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
+            
+            g_slot2.buffer = (uint8_t*)0x0C000000;
+            return true;
+        }
+        
         g_slot2.type = SLOT2_SUPERCARD;
         g_slot2.size = 16 * 1024 * 1024;
         g_slot2.writable = true;

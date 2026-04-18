@@ -95,6 +95,7 @@ void psx_load_raw_bin(PsxState *psx, const uint8_t *data, size_t size, uint32_t 
 bool psx_load_bios(PsxState *psx, const uint8_t *data, size_t size);
 void psx_boot_bios(PsxState *psx);
 void psx_use_internal_ram(PsxState *psx);
+void psx_use_slot2_ram(PsxState *psx, uint8_t *slot2_buffer, size_t slot2_size);
 bool psx_set_ram_backing(PsxState *psx, uint8_t *buffer, size_t size, const char *backend_name);
 void psx_step(PsxState *psx);
 uint32_t psx_run(PsxState *psx, uint32_t max_steps);

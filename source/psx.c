@@ -2,6 +2,7 @@
 #include "psx_gpu.h"
 #include "psx_dma.h"
 #include "psx_cdrom.h"
+#include "psx_slot2.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -355,6 +356,16 @@ void psx_use_internal_ram(PsxState *psx) {
     psx->ram = psx->ram_internal;
     psx->ram_size = PSX_RAM_SIZE;
     strncpy(psx->ram_backend_name, "internal", sizeof(psx->ram_backend_name) - 1);
+    psx->ram_backend_name[sizeof(psx->ram_backend_name) - 1] = '\0';
+}
+
+void psx_use_slot2_ram(PsxState *psx, uint8_t *slot2_buffer, size_t slot2_size) {
+    if (psx == NULL || slot2_buffer == NULL || slot2_size < PSX_RAM_SIZE) {
+        return;
+    }
+    psx->ram = slot2_buffer;
+    psx->ram_size = PSX_RAM_SIZE;
+    strncpy(psx->ram_backend_name, "SuperChis", sizeof(psx->ram_backend_name) - 1);
     psx->ram_backend_name[sizeof(psx->ram_backend_name) - 1] = '\0';
 }
 

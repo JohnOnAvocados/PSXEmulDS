@@ -5,13 +5,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SLOT2_NONE        0
-#define SLOT2_SUPERCARD  1
-#define SLOT2_GBAEXP      2
-#define SLOT2_M3SD       3
-#define SLOT2_DSTT        4
+#define SLOT2_NONE            0
+#define SLOT2_SUPERCARD       1
+#define SLOT2_GBAEXP          2
+#define SLOT2_M3SD            3
+#define SLOT2_DSTT            4
+#define SLOT2_SUPERCHIS       5
 
-#define SLOT2_MAX_SIZE    (16 * 1024 * 1024)
+#define SLOT2_MAX_SIZE        (32 * 1024 * 1024)
+#define SLOT2_SUPERCHIS_SDRAM (32 * 1024 * 1024)
+#define SLOT2_SUPERCHIS_FRAM  (128 * 1024)
+#define SLOT2_SUPERCHIS_NOR    (128 * 1024 * 1024)
 
 typedef struct {
     uint8_t type;
@@ -20,6 +24,9 @@ typedef struct {
     bool initialized;
     bool writable;
     char name[32];
+    uint32_t sdram_base;
+    uint32_t fram_base;
+    uint32_t nor_base;
 } Slot2Device;
 
 void slot2_init(void);
