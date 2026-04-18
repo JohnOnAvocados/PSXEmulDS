@@ -40,15 +40,30 @@ bool slot2_detect(void) {
     if (g_slot2.initialized) {
         return g_slot2.type != SLOT2_NONE;
     }
-    
+
     g_slot2.initialized = true;
-    
+
+    iprintf("slot2: detecting...\n");
+
+    volatile uint16_t *sdram = SUPERCHIS_SDRAM_ADDR;
+    uint16_t initial_read = sdram[0];
+
+    iprintf("slot2: initial read %04x\n", (unsigned int)initial_read);
+
+    if (initial_read == 0xFFFF || initial_read == 0x0000) {
+        iprintf("slot2: empty/no response\n");
+        g_slot2.type = SLOT2_NONE;
+        g_slot2.size = 0;
+        strncpy(g_slot2.name, "None", sizeof(g_slot2.name) - 1);
+        g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
+        return false;
+    }
+
     sysSetBusOwners(BUS_OWNER_ARM9, BUS_OWNER_ARM9);
 
     iprintf("slot2: set bus owners\n");
 
     volatile uint16_t *mode_reg = SUPERCHIS_MODE_REG;
-    volatile uint16_t *sdram = SUPERCHIS_SDRAM_ADDR;
 
     mode_reg[0] = 0xA55A;
     mode_reg[0] = 0xA55A;
@@ -73,11 +88,11 @@ bool slot2_detect(void) {
         g_slot2.writable = true;
         strncpy(g_slot2.name, "SuperChis Prime", sizeof(g_slot2.name) - 1);
         g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
-        
+
         g_slot2.buffer = (uint8_t*)0x08000000;
         return true;
     }
-    
+
     g_slot2.type = SLOT2_NONE;
     g_slot2.size = 0;
     strncpy(g_slot2.name, "None", sizeof(g_slot2.name) - 1);
