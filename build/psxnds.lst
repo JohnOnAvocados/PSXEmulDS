@@ -521,158 +521,158 @@
 02020fd0 00000008 t ____aeabi_ldiv0_from_arm
 02020fd8 00000008 t __free_from_arm
 02020fe0 00000008 t ____aeabi_idiv0_from_arm
-02022540 00000080 t psx_reg_names
-02022808 00000010 t s_dvmDiscCalicoIface
-02022818 00000010 t s_dvmDiscCacheIface
-02022828 00000014 t fr_to_errno.0
-0202283c 00000014 T g_vfatFsDriver
-02022850 00000080 t _FAT_devoptab
-020228d0 00000080 t ExCvt
-02022950 0000000d t LfnOfs
-02022968 000000bc t cvt2.0
-02022a24 000001f2 t cvt1.1
-02022c18 00000100 t uc437
-02022dec 00000080 t dotab_stdout
-02022e6c 00000040 t registerNames
-02022eac T default_font_bin
-020236ac T default_font_bin_end
-020236ac 00000102 T SIN_LUT
-020238cc 00000030 t _DAYS_BEFORE_MONTH
-020238fc 00000030 t DAYS_IN_MONTH
-0202392c 00000022 t basefix.0
-0202398c 00000010 t zeroes.0
-0202399c 00000010 t blanks.1
-020239ac 00000010 t zeroes.0
-020239bc 00000010 t blanks.1
-020239cc 00000101 T _ctype_
-02023ad0 00000060 T __month_lengths
-02023b30 0000000c t p05.0
-02023b40 00000028 T __mprec_bigtens
-02023b68 000000c8 T __mprec_tens
-02023c30 00000010 t zeroes.0
-02023c40 00000010 t blanks.1
-02023c50 0000006c T __action_table
-02023cbc 0000006c T __state_table
-02023d28 00000100 T __chclass
-02023e28 000037f8 t categories
-02027620 00000080 T dotab_stdnull
-020276a0 00000004 d g_run_batch
-020276a4 00000010 d s_dvmDiscNand
-020276b4 00000010 d s_dvmDiscSd
-020276c4 00000010 d s_dvmDiscDldi
-020276d4 00000004 V g_dvmDefaultSectorsPerPage
-020276d8 00000004 V g_dvmDefaultCachePages
-020276e0 00000020 d s_dvmFsDrvTable
-02027700 00000001 d firstConsoleInit.0
-02027704 00000004 D currentConsole
-02027708 0000005c D defaultConsole
-02027764 00000001 d count
-02027765 00000001 d repeat
-02027766 00000001 d delay
-02027768 00000020 D bgTransform
-02027788 00000020 D bgScrollTable
-020277a8 00000020 D bgControl
-020277c8 00000004 D g_dietPrintFn
-020277cc 00000254 D __global_locale
-02027a20 00000004 D __malloc_sbrk_base
-02027a24 00000004 D __malloc_trim_threshold
-02027a28 00000408 D __malloc_av_
-02027e30 0000000c D __sglue
-02027e40 00000058 d tzinfo
-02027e98 00000004 D _impure_ptr
-02027ea0 00000200 D _impure_data
-020280a0 00000008 D _tzname
-020280a8 00000004 D environ
-020280ac 00000400 d _current_working_directory
-020284b0 00001000 d handles
-020294b0 0000000c d __stderr_handle
-020294bc 0000000c d __stdout_handle
-020294c8 0000000c d __stdin_handle
-020294d4 0000008c D devoptab_list
-02029560 00000004 d defaultDevice
-02029564 r __EH_FRAME_BEGIN__
-02029564 r __FRAME_END__
-02029568 r __tls_info
-02029574 d __frame_dummy_init_array_entry
-02029574 d __init_array_start
-02029574 d __preinit_array_end
-02029574 d __preinit_array_start
-02029578 d __do_global_dtors_aux_fini_array_entry
-02029578 d __fini_array_start
-02029578 d __init_array_end
-0202957c d __fini_array_end
-0202957c d __main_end
-02029580 ? __tls_end
-02029580 ? __tls_start
-02029580 b completed.1
-02029584 b object.0
-0202959c 00003a64 b g_test_suite
-0202d000 00000001 b g_emulator_mode
-0202d004 00002a0c b g_menu
-0202fa10 00000001 b g_auto_run
-0202fa14 0000005c b g_bottom_console
-0202fa70 0000005c b g_top_console
-0202facc 000000ac b g_boot
-0202fb78 001816f8 b g_psx
-020315fc a __loadlist_start
-0203162c a __loadlist_end
-021b1270 00000960 b g_cdrom
-021b1bd0 00000090 b g_dma
-021b1c60 00022360 b g_gpu
-021d3fc0 00000001 b g_debug_ready
-021d3fc4 00000004 b g_debug_pos
-021d3fc8 00002000 b g_debug_buffer
-021d5fc8 0000003c b g_slot2
-021d6004 00000004 V g_dvmCalicoNandMount
-021d6008 00000002 b Fsid
-021d600c 0000005c B currentCopy
-021d6068 00000002 b keysrepeat
-021d606c 00000004 b s_keypad
-021d6070 W g_excptHandler
-021d6074 00000008 B bgIsTextLut
-021d607c 00000140 B bgState
-021d61bc 00000008 b s_sleepThreads
-021d61c4 00000008 b s_joinThreads
-021d61cc 00000070 b s_idleThread
-021d623c 00000070 b s_mainThread
-021d62ac 00000004 b s_defaultErrno.0
-021d62b0 00000004 V __stacksize__
-021d62b4 00000001 B g_isTwlMode
-021d62b8 000001f0 b s_pxiChannels
-021d64a8 00000004 b s_pxiRecvState
-021d64ac 00000008 b s_pxiRecvQueue
-021d64b4 00000004 b s_pxiSendMutex
-021d64b8 00000004 b s_firstTask
-021d64c0 00000008 b s_highTickCount
-021d64c8 00000001 b s_tickInit
-021d64cc 00000008 b s_mailboxRecvQueue
-021d64d8 00000200 b s_pmPxiThreadStack
-021d66d8 00000070 b s_pmPxiThread
-021d6748 00000008 b s_pmState
-021d6750 00000028 B __malloc_current_mallinfo
-021d6778 00000004 B __malloc_max_total_mem
-021d677c 00000004 B __malloc_max_sbrked_mem
-021d6780 00000004 B __malloc_top_pad
-021d6784 0000000c b __sfp_recursive_mutex
-021d6790 00000168 B __sf
-021d68f8 00000004 B __stdio_exit_handler
-021d68fc 0000000c b __malloc_recursive_mutex
-021d6908 00000004 b prev_tzenv
-021d690c 0000000c b __tzname_dst
-021d6918 0000000c b __tzname_std
-021d6924 0000000c b __env_recursive_mutex
-021d6930 00000004 B _timezone
-021d6934 00000004 B _daylight
-021d6938 00000004 b __tz_mutex
-021d693c 00000004 b initial_env
-021d6940 00000400 b temp_cwd
-021d6d40 00000004 b __hndl_lock
-021d6d44 00000004 B fake_heap_start
-021d6d48 00000004 B fake_heap_end
-021d6d4c 00000004 b heap_start.0
-021d6d50 b __heap_start_ntr
-021d6d50 b __main_bss_end
+0202254c 00000080 t psx_reg_names
+02022814 00000010 t s_dvmDiscCalicoIface
+02022824 00000010 t s_dvmDiscCacheIface
+02022834 00000014 t fr_to_errno.0
+02022848 00000014 T g_vfatFsDriver
+0202285c 00000080 t _FAT_devoptab
+020228dc 00000080 t ExCvt
+0202295c 0000000d t LfnOfs
+02022974 000000bc t cvt2.0
+02022a30 000001f2 t cvt1.1
+02022c28 00000100 t uc437
+02022dfc 00000080 t dotab_stdout
+02022e7c 00000040 t registerNames
+02022ebc T default_font_bin
+020236bc T default_font_bin_end
+020236bc 00000102 T SIN_LUT
+020238dc 00000030 t _DAYS_BEFORE_MONTH
+0202390c 00000030 t DAYS_IN_MONTH
+0202393c 00000022 t basefix.0
+0202399c 00000010 t zeroes.0
+020239ac 00000010 t blanks.1
+020239bc 00000010 t zeroes.0
+020239cc 00000010 t blanks.1
+020239dc 00000101 T _ctype_
+02023ae0 00000060 T __month_lengths
+02023b40 0000000c t p05.0
+02023b50 00000028 T __mprec_bigtens
+02023b78 000000c8 T __mprec_tens
+02023c40 00000010 t zeroes.0
+02023c50 00000010 t blanks.1
+02023c60 0000006c T __action_table
+02023ccc 0000006c T __state_table
+02023d38 00000100 T __chclass
+02023e38 000037f8 t categories
+02027630 00000080 T dotab_stdnull
+020276b0 00000004 d g_run_batch
+020276b4 00000010 d s_dvmDiscNand
+020276c4 00000010 d s_dvmDiscSd
+020276d4 00000010 d s_dvmDiscDldi
+020276e4 00000004 V g_dvmDefaultSectorsPerPage
+020276e8 00000004 V g_dvmDefaultCachePages
+020276f0 00000020 d s_dvmFsDrvTable
+02027710 00000001 d firstConsoleInit.0
+02027714 00000004 D currentConsole
+02027718 0000005c D defaultConsole
+02027774 00000001 d count
+02027775 00000001 d repeat
+02027776 00000001 d delay
+02027778 00000020 D bgTransform
+02027798 00000020 D bgScrollTable
+020277b8 00000020 D bgControl
+020277d8 00000004 D g_dietPrintFn
+020277dc 00000254 D __global_locale
+02027a30 00000004 D __malloc_sbrk_base
+02027a34 00000004 D __malloc_trim_threshold
+02027a38 00000408 D __malloc_av_
+02027e40 0000000c D __sglue
+02027e50 00000058 d tzinfo
+02027ea8 00000004 D _impure_ptr
+02027eb0 00000200 D _impure_data
+020280b0 00000008 D _tzname
+020280b8 00000004 D environ
+020280bc 00000400 d _current_working_directory
+020284c0 00001000 d handles
+020294c0 0000000c d __stderr_handle
+020294cc 0000000c d __stdout_handle
+020294d8 0000000c d __stdin_handle
+020294e4 0000008c D devoptab_list
+02029570 00000004 d defaultDevice
+02029574 r __EH_FRAME_BEGIN__
+02029574 r __FRAME_END__
+02029578 r __tls_info
+02029584 d __frame_dummy_init_array_entry
+02029584 d __init_array_start
+02029584 d __preinit_array_end
+02029584 d __preinit_array_start
+02029588 d __do_global_dtors_aux_fini_array_entry
+02029588 d __fini_array_start
+02029588 d __init_array_end
+0202958c d __fini_array_end
+0202958c d __main_end
+02029590 ? __tls_end
+02029590 ? __tls_start
+02029590 b completed.1
+02029594 b object.0
+020295ac 00003a64 b g_test_suite
+0202d010 00000001 b g_emulator_mode
+0202d014 00002a0c b g_menu
+0202fa20 00000001 b g_auto_run
+0202fa24 0000005c b g_bottom_console
+0202fa80 0000005c b g_top_console
+0202fadc 000000ac b g_boot
+0202fb88 001816f8 b g_psx
+0203160c a __loadlist_start
+0203163c a __loadlist_end
+021b1280 00000960 b g_cdrom
+021b1be0 00000090 b g_dma
+021b1c70 00022360 b g_gpu
+021d3fd0 00000001 b g_debug_ready
+021d3fd4 00000004 b g_debug_pos
+021d3fd8 00002000 b g_debug_buffer
+021d5fd8 0000003c b g_slot2
+021d6014 00000004 V g_dvmCalicoNandMount
+021d6018 00000002 b Fsid
+021d601c 0000005c B currentCopy
+021d6078 00000002 b keysrepeat
+021d607c 00000004 b s_keypad
+021d6080 W g_excptHandler
+021d6084 00000008 B bgIsTextLut
+021d608c 00000140 B bgState
+021d61cc 00000008 b s_sleepThreads
+021d61d4 00000008 b s_joinThreads
+021d61dc 00000070 b s_idleThread
+021d624c 00000070 b s_mainThread
+021d62bc 00000004 b s_defaultErrno.0
+021d62c0 00000004 V __stacksize__
+021d62c4 00000001 B g_isTwlMode
+021d62c8 000001f0 b s_pxiChannels
+021d64b8 00000004 b s_pxiRecvState
+021d64bc 00000008 b s_pxiRecvQueue
+021d64c4 00000004 b s_pxiSendMutex
+021d64c8 00000004 b s_firstTask
+021d64d0 00000008 b s_highTickCount
+021d64d8 00000001 b s_tickInit
+021d64dc 00000008 b s_mailboxRecvQueue
+021d64e8 00000200 b s_pmPxiThreadStack
+021d66e8 00000070 b s_pmPxiThread
+021d6758 00000008 b s_pmState
+021d6760 00000028 B __malloc_current_mallinfo
+021d6788 00000004 B __malloc_max_total_mem
+021d678c 00000004 B __malloc_max_sbrked_mem
+021d6790 00000004 B __malloc_top_pad
+021d6794 0000000c b __sfp_recursive_mutex
+021d67a0 00000168 B __sf
+021d6908 00000004 B __stdio_exit_handler
+021d690c 0000000c b __malloc_recursive_mutex
+021d6918 00000004 b prev_tzenv
+021d691c 0000000c b __tzname_dst
+021d6928 0000000c b __tzname_std
+021d6934 0000000c b __env_recursive_mutex
+021d6940 00000004 B _timezone
+021d6944 00000004 B _daylight
+021d6948 00000004 b __tz_mutex
+021d694c 00000004 b initial_env
+021d6950 00000400 b temp_cwd
+021d6d50 00000004 b __hndl_lock
+021d6d54 00000004 B fake_heap_start
+021d6d58 00000004 B fake_heap_end
+021d6d5c 00000004 b heap_start.0
+021d6d60 b __heap_start_ntr
 021d6d60 r __heap_start_twl
+021d6d60 b __main_bss_end
 021d6d60 ? __twl_bss_end
 021d6d60 ? __twl_end
 021d6d60 ? __twl_start

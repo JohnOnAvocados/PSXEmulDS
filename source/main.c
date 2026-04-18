@@ -507,17 +507,19 @@ int main(void) {
     consoleInit(&g_top_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);
     consoleInit(&g_bottom_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
 
-draw_startup_message("Video initialized. FAT init...");
+    draw_startup_message("Video initialized. FAT init...");
 
-    if (!fatInitDefault()) {
-        iprintf("FAT init failed!");
-        iprintf("Trying built-in demo anyway...");
-        g_boot.fat_ready = false;
+    g_boot.fat_ready = fatInitDefault();
+
+    if (!g_boot.fat_ready) {
+        iprintf("Trying fallback mode...");
+        consoleInit(NULL, 0, BgType_Text4bpp, BgSize_T_256x256, 0, 0, false, false);
     } else {
-        g_boot.fat_ready = true;
+        iprintf("FAT ready: %d", g_boot.fat_ready);
     }
 
     debug_init();
+    debug_log("=== PSXEmulDS Boot ===");
     debug_log("FAT: %d", g_boot.fat_ready);
 
     psx_init(&g_psx);
@@ -545,7 +547,6 @@ draw_startup_message("Video initialized. FAT init...");
         draw_startup_message(status_msg);
         debug_log("Using internal RAM");
     }
-    g_boot.fat_ready = true;
 
     debug_log("Loading BIOS (if present)...");
     g_boot.bios_loaded = psx_load_bios(&g_psx, NULL, 0);
@@ -561,15 +562,15 @@ draw_startup_message("Video initialized. FAT init...");
     swiWaitForVBlank();
     swiWaitForVBlank();
     swiWaitForVBlank();
-    
+
     run_menu_mode();
-    
+
     if (!g_emulator_mode) {
         memset(&g_boot, 0, sizeof(g_boot));
         g_auto_run = true;
         g_run_batch = 1024;
     }
-    
+
     draw_state(&g_psx, &g_boot, total_steps);
 
     while (1) {
