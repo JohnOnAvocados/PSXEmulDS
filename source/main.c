@@ -473,6 +473,8 @@ static void run_menu_mode(void) {
                 vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
 
                 g_emulator_mode = true;
+                g_auto_run = true;
+                g_run_batch = 1024;
                 return;
             }
         }
