@@ -397,7 +397,7 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
 
 static void draw_video_output(void) {
     if (g_psx.gpu == NULL) {
-        consoleSelect(&g_top_console);
+        consoleSelect(&g_bottom_console);
         consoleClear();
         iprintf("GPU NOT INITIALIZED");
         return;
@@ -420,9 +420,11 @@ static void draw_video_output(void) {
             uint16_t pixel = vram[src_y * PSX_GPU_VRAM_WIDTH + src_x];
             if (pixel != 0) {
                 render_count++;
-                if (first_nonzero < 0) first_nonzero = (y * 256 + x);
+                if (first_nonzero < 0) first_nonzero = y * 256 + x;
             }
-            (BG_GFX)[y * 256 + x] = pixel;
+            uint16_t bg_x = x;
+            uint16_t bg_y = y;
+            (BG_GFX)[bg_y * 256 + bg_x] = pixel;
         }
     }
 
@@ -432,7 +434,6 @@ static void draw_video_output(void) {
     iprintf("first=%04x mid=%04x", (unsigned int)first_pixel, (unsigned int)mid_pixel);
     iprintf("last=%04x nzero=%d", (unsigned int)last_pixel, first_nonzero);
     iprintf("px=%d PC=%08lx", render_count, (unsigned long)g_psx.cpu.pc);
-    iprintf("gpu=%p mode=%d", (void*)g_psx.gpu, (int)g_emulator_mode);
 }
 
 static void run_menu_mode(void) {
