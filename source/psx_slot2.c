@@ -2,9 +2,14 @@
 
 #include <nds.h>
 #include <string.h>
+#include <stdio.h>
 
-#define SUPERCHIS_DETECT_ADDR    ((volatile uint16_t*)0x0A000000)
-#define SUPERCHIS_SDRAM_ADDR    ((volatile uint32_t*)0x0C000000)
+#define SUPERCHIS_DETECT_ADDR    ((volatile uint16_t*)0x08000000)
+#define SUPERCHIS_SDRAM_ADDR    ((volatile uint16_t*)0x08000000)
+#define SUPERCHIS_MODE_REG    ((volatile uint16_t*)0x09FFFFFE)
+
+#define SUPERCHIS_MODE_RAM     0x0005
+#define SUPERCHIS_MODE_MEDIA  0x0003
 
 static Slot2Device g_slot2;
 
@@ -14,8 +19,8 @@ void slot2_init(void) {
     g_slot2.buffer = NULL;
     g_slot2.size = 0;
     g_slot2.initialized = false;
-    g_slot2.sdram_base = 0x0C000000;
-    g_slot2.fram_base = 0x0A800000;
+    g_slot2.sdram_base = 0x08000000;
+    g_slot2.fram_base = 0x0A000000;
     g_slot2.nor_base = 0x08000000;
 }
 
@@ -38,37 +43,39 @@ bool slot2_detect(void) {
     
     g_slot2.initialized = true;
     
-    uint16_t test_val = 0x1234;
-    *SUPERCHIS_DETECT_ADDR = test_val;
-    uint16_t readback = *SUPERCHIS_DETECT_ADDR;
-    
-    if (readback == test_val) {
-        volatile uint32_t *sdram = SUPERCHIS_SDRAM_ADDR;
-        sdram[0] = 0xDEADBEEF;
-        sdram[1] = 0xCAFEBABE;
-        
-        if (sdram[0] == 0xDEADBEEF && sdram[1] == 0xCAFEBABE) {
-            g_slot2.type = SLOT2_SUPERCHIS;
-            g_slot2.size = SLOT2_SUPERCHIS_SDRAM;
-            g_slot2.writable = true;
-            strncpy(g_slot2.name, "SuperChis Prime", sizeof(g_slot2.name) - 1);
-            g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
-            
-            g_slot2.buffer = (uint8_t*)0x0C000000;
-            return true;
-        }
-        
-        g_slot2.type = SLOT2_SUPERCARD;
-        g_slot2.size = 16 * 1024 * 1024;
+    sysSetBusOwners(BUS_OWNER_ARM9, BUS_OWNER_ARM9);
+
+    iprintf("slot2: set bus owners\n");
+
+    volatile uint16_t *mode_reg = SUPERCHIS_MODE_REG;
+    volatile uint16_t *sdram = SUPERCHIS_SDRAM_ADDR;
+
+    mode_reg[0] = 0xA55A;
+    mode_reg[0] = 0xA55A;
+    mode_reg[0] = SUPERCHIS_MODE_RAM;
+    mode_reg[0] = SUPERCHIS_MODE_RAM;
+
+    iprintf("slot2: unlock sequence sent\n");
+
+    sdram[0] = 0xDEAD;
+    sdram[1] = 0xBEEF;
+    sdram[2] = 0xCAFE;
+    sdram[3] = 0xBABE;
+
+    iprintf("slot2: wrote test %04x %04x %04x %04x\n",
+           (unsigned int)sdram[0], (unsigned int)sdram[1],
+           (unsigned int)sdram[2], (unsigned int)sdram[3]);
+
+    if (sdram[0] == 0xDEAD && sdram[1] == 0xBEEF &&
+        sdram[2] == 0xCAFE && sdram[3] == 0xBABE) {
+        g_slot2.type = SLOT2_SUPERCHIS;
+        g_slot2.size = SLOT2_SUPERCHIS_SDRAM;
         g_slot2.writable = true;
-        strncpy(g_slot2.name, "SuperCard Slot-2", sizeof(g_slot2.name) - 1);
+        strncpy(g_slot2.name, "SuperChis Prime", sizeof(g_slot2.name) - 1);
         g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
         
-        g_slot2.buffer = (uint8_t*)malloc(g_slot2.size);
-        if (g_slot2.buffer != NULL) {
-            memset(g_slot2.buffer, 0, g_slot2.size);
-            return true;
-        }
+        g_slot2.buffer = (uint8_t*)0x08000000;
+        return true;
     }
     
     g_slot2.type = SLOT2_NONE;

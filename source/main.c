@@ -11,6 +11,7 @@
 #include "psx_cdrom.h"
 #include "psx_menu.h"
 #include "psx_gpu.h"
+#include "psx_debug.h"
 
 typedef struct {
     bool fat_ready;
@@ -488,17 +489,57 @@ int main(void) {
     consoleInit(&g_top_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);
     consoleInit(&g_bottom_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
 
-    draw_startup_message("Video initialized. FAT init...");
+draw_startup_message("Video initialized. FAT init...");
 
     if (!fatInitDefault()) {
         draw_startup_message("FAT init failed!");
         while (1) swiWaitForVBlank();
     }
-    
+
+    debug_init();
+    debug_log("FAT initialized");
+
     psx_init(&g_psx);
+    debug_log("PSX initialized");
+
+    slot2_init();
+    slot2_detect();
+    Slot2Device *slot2 = slot2_get_device();
+
+    debug_log("Slot-2 type: %d (%s)", slot2->type, slot2->name);
+    debug_log("Slot-2 buffer: %p", slot2->buffer);
+    debug_log("Slot-2 size: %lu", (unsigned long)slot2->size);
+
+    if (slot2->type == SLOT2_SUPERCHIS) {
+        char status_msg[64];
+        snprintf(status_msg, sizeof(status_msg), "SuperChis DETECTED (%dMB)!",
+                 32);
+        draw_startup_message(status_msg);
+        debug_log("Switching to Slot-2 RAM");
+        psx_use_slot2_ram(&g_psx, slot2->buffer, slot2->size);
+    } else {
+        char status_msg[64];
+        snprintf(status_msg, sizeof(status_msg), "Slot-2: %s",
+                 slot2->name);
+        draw_startup_message(status_msg);
+        debug_log("Using internal RAM");
+    }
     g_boot.fat_ready = true;
+
+    debug_log("Loading BIOS (if present)...");
     g_boot.bios_loaded = psx_load_bios(&g_psx, NULL, 0);
-    draw_startup_message("Using internal RAM");
+    debug_log("BIOS loaded: %d", g_boot.bios_loaded);
+
+    {
+        char ram_msg[64];
+        snprintf(ram_msg, sizeof(ram_msg), "PS1 RAM: %s (%lu KB)",
+                 g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
+        draw_startup_message(ram_msg);
+        debug_log("RAM backend: %s (%lu KB)", g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
+    }
+    swiWaitForVBlank();
+    swiWaitForVBlank();
+    swiWaitForVBlank();
     
     run_menu_mode();
     
@@ -506,7 +547,6 @@ int main(void) {
         memset(&g_boot, 0, sizeof(g_boot));
         g_auto_run = true;
         g_run_batch = 1024;
-        try_load_exe(&g_psx, &g_boot);
     }
     
     draw_state(&g_psx, &g_boot, total_steps);
@@ -540,6 +580,9 @@ int main(void) {
         }
 
         if (keys_pressed & KEY_L) {
+            debug_log("Saving debug log...");
+            debug_save();
+            redraw = true;
             if (g_test_suite.test_mode && g_test_suite.total_tests > 0) {
                 test_save_results(&g_test_suite);
                 snprintf(g_boot.status_line, sizeof(g_boot.status_line),
@@ -562,7 +605,7 @@ int main(void) {
             }
             run_menu_mode();
             if (!g_emulator_mode) {
-                try_load_exe(&g_psx, &g_boot);
+                psx_reset(&g_psx);
             }
             total_steps = 0;
             g_auto_run = false;
@@ -599,4 +642,5 @@ int main(void) {
 
         swiWaitForVBlank();
     }
+    return 0;
 }
