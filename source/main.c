@@ -426,7 +426,7 @@ static void draw_video_output(void) {
         }
     }
 
-    consoleSelect(&g_top_console);
+    consoleSelect(&g_bottom_console);
     consoleClear();
     iprintf("VRAM DEBUG");
     iprintf("first=%04x mid=%04x", (unsigned int)first_pixel, (unsigned int)mid_pixel);
@@ -465,13 +465,13 @@ static void run_menu_mode(void) {
                 consoleSelect(&g_bottom_console);
                 
                 cdrom_load_image(g_psx.cdrom, selected);
-                
+
                 psx_reset(&g_psx);
                 psx_boot_bios(&g_psx);
-                
-                videoSetMode(MODE_5_2D);
+
+                videoSetMode(MODE_0_2D);
                 vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
-                
+
                 g_emulator_mode = true;
                 return;
             }

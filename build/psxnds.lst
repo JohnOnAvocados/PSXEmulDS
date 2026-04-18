@@ -35,11 +35,11 @@
 020013c0 t __main_start
 020013c0 T _init
 020013cc 00000022 T exit
-020013f0 00000614 T main
-02001a04 t __do_global_dtors_aux
-02001a30 t frame_dummy
-02001a54 00000058 t draw_startup_message
-02001aac 0000012c t run_menu_mode
+020013f0 00000618 T main
+02001a08 t __do_global_dtors_aux
+02001a34 t frame_dummy
+02001a58 00000058 t draw_startup_message
+02001ab0 00000128 t run_menu_mode
 02001bd8 00000160 t test_save_results.part.0.constprop.0
 02001d38 00000384 t draw_state.constprop.0
 020020bc 000000a0 t psx_halt
