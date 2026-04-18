@@ -706,11 +706,13 @@ void psx_load_demo(PsxState *psx) {
 }
 
 bool psx_load_bios(PsxState *psx, const uint8_t *data, size_t size) {
-    if (data == NULL || size != PSX_BIOS_SIZE) {
+    if (data == NULL || size < 128 * 1024 || size > PSX_BIOS_SIZE * 2) {
         return false;
     }
 
-    memcpy(psx->bios, data, PSX_BIOS_SIZE);
+    size_t copy_size = size;
+    if (copy_size > PSX_BIOS_SIZE) copy_size = PSX_BIOS_SIZE;
+    memcpy(psx->bios, data, copy_size);
     psx->bios_loaded = true;
     strncpy(psx->halt_reason, "bios loaded", sizeof(psx->halt_reason) - 1);
     psx->halt_reason[sizeof(psx->halt_reason) - 1] = '\0';
