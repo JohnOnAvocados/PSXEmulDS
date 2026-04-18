@@ -465,25 +465,8 @@ static void run_menu_mode(void) {
                 iprintf("Loading: %s\n", selected);
                 consoleSelect(&g_bottom_console);
 
-                cdrom_load_image(g_psx.cdrom, selected);
-
-                uint8_t sector_data[2048];
-                bool loaded = false;
-                if (g_psx.cdrom->cd_sectors > 0) {
-                    if (cdrom_read_sector(g_psx.cdrom, 0, sector_data)) {
-                        memcpy(g_psx.ram, sector_data, 2048);
-                        psx_reset(&g_psx);
-                        g_psx.cpu.pc = 0x80000000;
-                        g_psx.cpu.next_pc = 0x80000004;
-                        loaded = true;
-                        iprintf("Loaded sector 0 to RAM");
-                    }
-                }
-                if (!loaded) {
-                    psx_reset(&g_psx);
-                    psx_boot_bios(&g_psx);
-                    iprintf("No CD loaded");
-                }
+                psx_reset(&g_psx);
+                psx_boot_bios(&g_psx);
 
                 videoSetMode(MODE_0_2D);
                 vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
