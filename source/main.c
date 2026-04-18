@@ -402,27 +402,35 @@ static void draw_video_output(void) {
         iprintf("GPU NOT INITIALIZED");
         return;
     }
-    
+
     uint16_t *vram = g_psx.gpu->vram;
     uint16_t display_x = g_psx.gpu->display_x;
     uint16_t display_y = g_psx.gpu->display_y;
-    
+
+    uint16_t first_pixel = vram[0];
+    uint16_t mid_pixel = vram[PSX_GPU_VRAM_WIDTH * 100 + 128];
+    uint16_t last_pixel = vram[PSX_GPU_VRAM_WIDTH * PSX_GPU_VRAM_HEIGHT - 1];
+
     int render_count = 0;
+    int first_nonzero = -1;
     for (int y = 0; y < 192; y++) {
         for (int x = 0; x < 256; x++) {
             int src_y = (display_y + y) % PSX_GPU_VRAM_HEIGHT;
             int src_x = (display_x + x) % PSX_GPU_VRAM_WIDTH;
             uint16_t pixel = vram[src_y * PSX_GPU_VRAM_WIDTH + src_x];
-            if (pixel != 0) render_count++;
+            if (pixel != 0) {
+                render_count++;
+                if (first_nonzero < 0) first_nonzero = (y * 256 + x);
+            }
             (BG_GFX)[y * 256 + x] = pixel;
         }
     }
-    
-    if (render_count == 0) {
-        consoleSelect(&g_top_console);
-        consoleClear();
-        iprintf("Empty VRAM (%d pixels)", render_count);
-    }
+
+    consoleSelect(&g_top_console);
+    consoleClear();
+    iprintf("VRAM: first=%04x mid=%04x", first_pixel, mid_pixel);
+    iprintf("last=%04x non-zero=%d", last_pixel, first_nonzero);
+    iprintf("pixels: %d PC=%08lx", render_count, g_psx.cpu.pc);
 }
 
 static void run_menu_mode(void) {
