@@ -42,61 +42,11 @@ bool slot2_detect(void) {
     }
 
     g_slot2.initialized = true;
-
-    iprintf("slot2: detecting...\n");
-
-    volatile uint16_t *sdram = SUPERCHIS_SDRAM_ADDR;
-    uint16_t initial_read = sdram[0];
-
-    iprintf("slot2: initial read %04x\n", (unsigned int)initial_read);
-
-    if (initial_read == 0xFFFF || initial_read == 0x0000) {
-        iprintf("slot2: empty/no response\n");
-        g_slot2.type = SLOT2_NONE;
-        g_slot2.size = 0;
-        strncpy(g_slot2.name, "None", sizeof(g_slot2.name) - 1);
-        g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
-        return false;
-    }
-
-    sysSetBusOwners(BUS_OWNER_ARM9, BUS_OWNER_ARM9);
-
-    iprintf("slot2: set bus owners\n");
-
-    volatile uint16_t *mode_reg = SUPERCHIS_MODE_REG;
-
-    mode_reg[0] = 0xA55A;
-    mode_reg[0] = 0xA55A;
-    mode_reg[0] = SUPERCHIS_MODE_RAM;
-    mode_reg[0] = SUPERCHIS_MODE_RAM;
-
-    iprintf("slot2: unlock sequence sent\n");
-
-    sdram[0] = 0xDEAD;
-    sdram[1] = 0xBEEF;
-    sdram[2] = 0xCAFE;
-    sdram[3] = 0xBABE;
-
-    iprintf("slot2: wrote test %04x %04x %04x %04x\n",
-           (unsigned int)sdram[0], (unsigned int)sdram[1],
-           (unsigned int)sdram[2], (unsigned int)sdram[3]);
-
-    if (sdram[0] == 0xDEAD && sdram[1] == 0xBEEF &&
-        sdram[2] == 0xCAFE && sdram[3] == 0xBABE) {
-        g_slot2.type = SLOT2_SUPERCHIS;
-        g_slot2.size = SLOT2_SUPERCHIS_SDRAM;
-        g_slot2.writable = true;
-        strncpy(g_slot2.name, "SuperChis Prime", sizeof(g_slot2.name) - 1);
-        g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
-
-        g_slot2.buffer = (uint8_t*)0x08000000;
-        return true;
-    }
-
     g_slot2.type = SLOT2_NONE;
     g_slot2.size = 0;
-    strncpy(g_slot2.name, "None", sizeof(g_slot2.name) - 1);
+    strncpy(g_slot2.name, "Disabled (debug)", sizeof(g_slot2.name) - 1);
     g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
+    iprintf("slot2: detection disabled\n");
     return false;
 }
 
