@@ -27,55 +27,45 @@ static const char *const psx_reg_names[32] = {
     "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
 };
 
-static uint32_t psx_to_physical(uint32_t addr) {
-    if (addr >= PSX_KSEG1_BASE && addr < 0xC0000000) {
-        return addr - PSX_KSEG1_BASE;
+static inline uint32_t psx_to_physical(uint32_t addr) {
+    if (addr >= 0x80000000) {
+        return addr & 0x007FFFFF;
     }
-
-    if (addr >= PSX_KSEG0_BASE && addr < PSX_KSEG1_BASE) {
-        return addr - PSX_KSEG0_BASE;
+    if (addr >= 0xA0000000) {
+        return addr & 0x007FFFFF;
     }
-
     return addr;
 }
 
-static uint32_t psx_translate_ram(const PsxState *psx, uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys < PSX_RAM_MIRROR_SIZE && psx->ram_size != 0) {
+static inline uint32_t psx_translate_ram(const PsxState *psx, uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    if (phys < 0x00800000 && psx->ram_size != 0) {
         return phys % (uint32_t)psx->ram_size;
     }
-
     return UINT32_MAX;
 }
 
-static uint32_t psx_translate_scratchpad(uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys >= PSX_SCRATCHPAD_BASE && phys < PSX_SCRATCHPAD_BASE + PSX_SCRATCHPAD_SIZE) {
-        return phys - PSX_SCRATCHPAD_BASE;
+static inline uint32_t psx_translate_scratchpad(uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    if (phys >= 0x1F800000 && phys < 0x1F800000 + PSX_SCRATCHPAD_SIZE) {
+        return phys - 0x1F800000;
     }
-
     return UINT32_MAX;
 }
 
-static uint32_t psx_translate_io(uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys >= PSX_IO_BASE && phys < PSX_IO_BASE + PSX_IO_SIZE) {
-        return phys - PSX_IO_BASE;
+static inline uint32_t psx_translate_io(uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    if (phys >= 0x1F801000 && phys < 0x1F801000 + PSX_IO_SIZE) {
+        return phys - 0x1F801000;
     }
-
     return UINT32_MAX;
 }
 
-static uint32_t psx_translate_bios(uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys >= PSX_BIOS_BASE && phys < PSX_BIOS_BASE + PSX_BIOS_SIZE) {
-        return phys - PSX_BIOS_BASE;
+static inline uint32_t psx_translate_bios(uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    if (phys >= 0x1FC00000 && phys < 0x1FC00000 + PSX_BIOS_SIZE) {
+        return phys - 0x1FC00000;
     }
-
     return UINT32_MAX;
 }
 

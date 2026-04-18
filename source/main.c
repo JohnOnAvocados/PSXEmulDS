@@ -509,7 +509,7 @@ int main(void) {
     if (!g_emulator_mode) {
         memset(&g_boot, 0, sizeof(g_boot));
         g_auto_run = true;
-        g_run_batch = 512;
+        g_run_batch = 1024;
         try_load_exe(&g_psx, &g_boot);
     }
     

@@ -92,16 +92,12 @@ static void gpu_fill_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, 
         float t_top, t_bottom;
         
         if (y < y1) {
-            t_top = (float)(y - y0) / (float)(y1 - y0);
+            t_top = (y - y0) / (float)(y1 - y0);
         } else {
-            t_top = (float)(y - y1) / (float)(y2 - y1);
+            t_top = (y - y1) / (float)(y2 - y1);
         }
         
-        if (y2 != y0) {
-            t_bottom = (float)(y - y0) / (float)(y2 - y0);
-        } else {
-            t_bottom = 0;
-        }
+        t_bottom = (y - y0) / (float)(y2 - y0);
         
         int x_start = x0 + (int)((float)(x1 - x0) * t_top);
         int x_end = x0 + (int)((float)(x2 - x0) * t_bottom);
@@ -112,10 +108,15 @@ static void gpu_fill_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, 
             x_end = temp;
         }
         
-        for (int x = x_start; x <= x_end; x++) {
-            gpu_set_pixel(gpu, x, y, color);
+        if (x_start >= 0 && x_start < PSX_GPU_VRAM_WIDTH && y >= 0 && y < PSX_GPU_VRAM_HEIGHT) {
+            if (x_end >= PSX_GPU_VRAM_WIDTH) x_end = PSX_GPU_VRAM_WIDTH - 1;
+            uint16_t *row = &gpu->vram[y * PSX_GPU_VRAM_WIDTH];
+            for (int x = x_start; x <= x_end; x++) {
+                row[x] = color;
+            }
         }
     }
+    gpu->vram_dirty = true;
 }
 
 static void gpu_fill_line(PsxGpuState *gpu, int x0, int y0, int x1, int y1, uint16_t color) {
@@ -146,11 +147,20 @@ static void gpu_fill_line(PsxGpuState *gpu, int x0, int y0, int x1, int y1, uint
 }
 
 static void gpu_fill_rect(PsxGpuState *gpu, int x, int y, int w, int h, uint16_t color) {
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > PSX_GPU_VRAM_WIDTH) w = PSX_GPU_VRAM_WIDTH - x;
+    if (y + h > PSX_GPU_VRAM_HEIGHT) h = PSX_GPU_VRAM_HEIGHT - y;
+    if (w <= 0 || h <= 0) return;
+    
+    uint16_t *row = &gpu->vram[y * PSX_GPU_VRAM_WIDTH + x];
     for (int j = 0; j < h; j++) {
         for (int i = 0; i < w; i++) {
-            gpu_set_pixel(gpu, x + i, y + j, color);
+            row[i] = color;
         }
+        row += PSX_GPU_VRAM_WIDTH;
     }
+    gpu->vram_dirty = true;
 }
 
 void gpu_init(PsxGpuState *gpu) {
