@@ -1,5 +1,43 @@
 # psxnds Implementation Plan
 
+## Research Findings - 2026-04-18
+
+### FAT/DLDI Issue Root Cause
+
+**Problem**: FAT initialization fails on Ace3DS X flashcart via TwilightMenu++  
+**Symptom**: `fatInit(0, 0)` returns false - cannot access SD card  
+**Same as**: NesDS, GBARunner2 on same hardware  
+
+**Root Cause Found**:
+```c
+// WRONG (our code):
+boot->fat_ready = fatInit(0, 0);  
+
+// CORRECT (working emulators):  
+boot->fat_ready = fatInitDefault();  
+```
+
+**Why it fails**:
+- `fatInit(0, 0)` = cache size 0 (no caching) + setAsDefaultDevice = false
+- `fatInitDefault()` = default cache (5 pages = 20KB) + setAsDefaultDevice = true
+
+The disk cache is required for any meaningful file access. Without it, I/O operations immediately fail.
+
+### Implementation Steps
+
+1. **FIX FAT**: Change fatInit(0, 0) -> fatInitDefault() ← CURRENT
+2. **Rebuild & Test**: Verify SD card access works
+3. **Continue**: BIOS loading, video output fixes
+
+### References
+- nds-hb-menu (devkitPro): Uses fatInitDefault()
+- NesDS: Uses fatInitDefault()
+- libfat docs: "-lfat must come before -lnds9" (we have this correct)
+
+---
+
+## Original Plan (Reference)
+
 ## Executive Summary
 
 The emulator has a **functional CPU and basic memory system**, but lacks several critical features for actual game playback. Below is a prioritized roadmap.

@@ -4,7 +4,31 @@
 
 The goal is to create a PS1 emulator that boots games and runs them at lower FPS rather than constantly crashing. While not expected to match PC emulator performance, functional game execution is the priority.
 
-## Current Status - Phase 2-3 Complete
+## Current Status - Research Phase
+
+- **Working**: CPU, GPU, CD-ROM, DMA, Timers, Built-in demo
+- **Researching**: FAT/DLDI access on Ace3DS X flashcart via TwilightMenu++
+- **Todo**: Fix fatInit parameters, then complete video output
+
+## Research Log - 2026-04-18
+
+### Issue: FAT Initialization Fails
+- **Symptom**: `fatInit(0, 0)` returns false - no SD card access
+- **Environment**: Ace3DS X (Slot-1) + TwilightMenu++ + DS Lite
+- **Expected**: Should work like NesDS, GBARunner2 which work on same setup
+
+### Root Cause Identified
+- **Wrong**: `fatInit(0, 0)` - cache size 0, not set as default device
+- **Correct**: `fatInitDefault()` - default cache (5 pages), set as default device
+
+### Reference Sources
+- nds-hb-menu bootstrap.c uses `fatInitDefault()`
+- nesDS uses `fatInitDefault()`  
+- libfat documentation: "-lfat must come before -lnds9"
+- libnds has internal FAT replacement for newer devkitPro
+
+### Fix (IMPLEMENTED SOON)
+- Change `fatInit(0, 0)` to `fatInitDefault()`
 
 The project has completed Phase 1 (Stabilization), Phase 2 (Boot Capability), and Phase 3 (Runtime):
 

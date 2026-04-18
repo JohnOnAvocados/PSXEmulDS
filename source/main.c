@@ -249,7 +249,7 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
     size_t i;
 
     draw_startup_message("Mounting FAT...");
-    boot->fat_ready = fatInit(0, 0);
+    boot->fat_ready = fatInitDefault();
     boot->bios_loaded = false;
     boot->exe_loaded = false;
     boot->bin_loaded = false;
