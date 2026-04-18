@@ -503,12 +503,15 @@ int main(void) {
 draw_startup_message("Video initialized. FAT init...");
 
     if (!fatInitDefault()) {
-        draw_startup_message("FAT init failed!");
-        while (1) swiWaitForVBlank();
+        iprintf("FAT init failed!");
+        iprintf("Trying built-in demo anyway...");
+        g_boot.fat_ready = false;
+    } else {
+        g_boot.fat_ready = true;
     }
 
     debug_init();
-    debug_log("FAT initialized");
+    debug_log("FAT: %d", g_boot.fat_ready);
 
     psx_init(&g_psx);
     debug_log("PSX initialized");
