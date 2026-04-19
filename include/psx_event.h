@@ -3,30 +3,31 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "psx.h"
 
 #define PSX_EVENT_MAX_CALLBACKS 32
 #define PSX_EVENT_TIMER_COUNT 3
 
-#define PSX_EVENT_FLAG_CB  0x0001
-#define PSX_EVENT_FLAG_IO 0x0002
-#define PSX_EVENT_FLAG_PIO 0x0004
-#define PSX_EVENT_flag_T0 0x0008
-#define PSX_EVENT_FLAG_T1 0x0010
-#define PSX_EVENT_FLAG_T2 0x0020
-#define PSX_EVENT_FLAG_SIO 0x0040
-#define PSX_EVENT_FLAG_W0 0x0100
-#define PSX_EVENT_FLAG_W1 0x0200
-#define PSX_EVENT_FLAG_W2 0x0400
+#define PSX_EVENT_FLAG_CB   0x0001
+#define PSX_EVENT_FLAG_IO   0x0002
+#define PSX_EVENT_FLAG_PIO  0x0004
+#define PSX_EVENT_FLAG_T0  0x0008
+#define PSX_EVENT_FLAG_T1  0x0010
+#define PSX_EVENT_FLAG_T2  0x0020
+#define PSX_EVENT_FLAG_SIO  0x0040
+#define PSX_EVENT_FLAG_W0  0x0100
+#define PSX_EVENT_FLAG_W1  0x0200
+#define PSX_EVENT_FLAG_W2  0x0400
 #define PSX_EVENT_FLAG_RTC 0x0800
-#define PSX_EVENT_FLAG_CD 0x1000
-#define PSX_EVENT_FLAG_PAD 0x2000
-#define PSX_EVENT_FLAG_MC 0x4000
+#define PSX_EVENT_FLAG_CD  0x1000
+#define PSX_EVENT_FLAG_PAD  0x2000
+#define PSX_EVENT_FLAG_MC  0x4000
 
-typedef struct {
-    void *next;
-    void *prev;
+typedef struct PsxEventCallback {
+    struct PsxEventCallback *next;
+    struct PsxEventCallback *prev;
     uint32_t status;
     uint32_t mask;
     uint32_t (*handler)(uint32_t, void *);
@@ -54,8 +55,19 @@ typedef enum {
     PSX_EVENT_TYPE_PAD,
     PSX_EVENT_TYPE_MEMCARD,
     PSX_EVENT_TYPE_SIO,
+    PSX_EVENT_TYPE_RTC,
     PSX_EVENT_TYPE_COUNT
 } PsxEventType;
+
+#define PSX_EVENT_CD_COMPLETE    0x01
+#define PSX_EVENT_CD_DATA_READY   0x02
+#define PSX_EVENT_CD_SECOND      0x04
+#define PSX_EVENT_CD_ERROR      0x08
+
+#define PSX_EVENT_MC_INSERT   0x01
+#define PSX_EVENT_MC_REMOVE  0x02
+#define PSX_EVENT_MC_READY  0x04
+#define PSX_EVENT_MC_ERROR  0x08
 
 void psx_event_init(PsxState *psx);
 void psx_event_reset(PsxState *psx);
@@ -82,5 +94,13 @@ void psx_interrupt_set_mode(PsxState *psx, uint32_t mode);
 uint32_t psx_interrupt_get_mode(const PsxState *psx);
 
 void psx_handle_interrupt(PsxState *psx);
+
+void psx_event_cdrom_ready(PsxState *psx);
+void psx_event_cdrom_complete(PsxState *psx, int error);
+void psx_event_cdrom_error(PsxState *psx, int error);
+
+void psx_event_mc_insert(PsxState *psx, int slot);
+void psx_event_mc_remove(PsxState *psx, int slot);
+void psx_event_mc_error(PsxState *psx, int slot, int error);
 
 #endif

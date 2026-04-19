@@ -260,7 +260,6 @@ void psx_handle_interrupt(PsxState *psx) {
         return;
     }
     
-    uint32_t irq_mask = (status >> 8) & 0xFF;
     uint32_t pending = cause & 0x0000FF00;
     
     if (pending == 0) {
@@ -275,4 +274,34 @@ void psx_handle_interrupt(PsxState *psx) {
     psx->cpu.cop0[12] = old_status | 0x00000002;
     
     psx->cycles++;
+}
+
+void psx_event_cdrom_ready(PsxState *psx) {
+    psx_event_trigger(psx, PSX_EVENT_TYPE_CDROM, PSX_EVENT_CD_DATA_READY);
+}
+
+void psx_event_cdrom_complete(PsxState *psx, int error) {
+    (void)error;
+    psx_event_trigger(psx, PSX_EVENT_TYPE_CDROM, PSX_EVENT_CD_COMPLETE);
+}
+
+void psx_event_cdrom_error(PsxState *psx, int error) {
+    (void)error;
+    psx_event_trigger(psx, PSX_EVENT_TYPE_CDROM, PSX_EVENT_CD_ERROR);
+}
+
+void psx_event_mc_insert(PsxState *psx, int slot) {
+    (void)slot;
+    psx_event_trigger(psx, PSX_EVENT_TYPE_MEMCARD, PSX_EVENT_MC_INSERT);
+}
+
+void psx_event_mc_remove(PsxState *psx, int slot) {
+    (void)slot;
+    psx_event_trigger(psx, PSX_EVENT_TYPE_MEMCARD, PSX_EVENT_MC_REMOVE);
+}
+
+void psx_event_mc_error(PsxState *psx, int slot, int error) {
+    (void)slot;
+    (void)error;
+    psx_event_trigger(psx, PSX_EVENT_TYPE_MEMCARD, PSX_EVENT_MC_ERROR);
 }
