@@ -104,10 +104,17 @@ typedef struct {
     uint16_t area_y2;
 } PsxGpuDrawing;
 
+typedef struct {
+    uint8_t semi_transparent;
+    uint8_t dither;
+    uint8_t clip_to_screen;
+} PsxGpuBlend;
+
 typedef struct PsxGpuState {
     uint16_t vram[PSX_GPU_VRAM_WIDTH * PSX_GPU_VRAM_HEIGHT];
     uint16_t texture[PSX_GPU_TEXTURE_WIDTH * PSX_GPU_TEXTURE_HEIGHT];
     uint16_t clut[256];
+    PsxGpuBlend blend;
     uint16_t display_x;
     uint16_t display_y;
     uint16_t display_w;

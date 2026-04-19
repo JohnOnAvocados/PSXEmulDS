@@ -382,6 +382,24 @@ void gpu_exec_gp0(PsxGpuState *gpu, uint8_t cmd) {
         }
         break;
         
+    case 0xC2:
+        if (gpu->gp0_param_count >= 2) {
+            uint16_t x = gpu->gp0_params[0] & 0x3FF;
+            uint16_t y = gpu->gp0_params[1] & 0x1FF;
+            gpu->clut_base_x = x;
+            gpu->clut_base_y = y;
+            uint8_t num_colors = (gpu->gp0_params[0] >> 14) & 0xFF;
+            if (num_colors == 0) num_colors = 1;
+            uint16_t clut_start = y * PSX_GPU_VRAM_WIDTH + x;
+            for (uint16_t i = 0; i < num_colors && i < 256; i++) {
+                uint16_t src = clut_start + i;
+                if (src < PSX_GPU_VRAM_WIDTH * PSX_GPU_VRAM_HEIGHT) {
+                    gpu->clut[i] = gpu->vram[src];
+                }
+            }
+        }
+        break;
+        
     default:
         break;
     }
