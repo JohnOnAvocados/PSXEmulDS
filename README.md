@@ -1,14 +1,14 @@
-# psxnds
+# PSXEmulDS
 
-`psxnds` is a Nintendo DS homebrew proof of concept for experimenting with a tiny PlayStation 1 emulator on real DS hardware.
+`PSXEmulDS` is a Nintendo DS homebrew PlayStation 1 emulator for running PS1 games on real DS hardware.
 
 The goal is to create a PS1 emulator that boots games and runs them at lower FPS rather than constantly crashing. While not expected to match PC emulator performance, functional game execution is the priority.
 
-## Current Status - Research Phase
+## Current Status - Alpha
 
-- **Working**: CPU, GPU, CD-ROM, DMA, Timers, Built-in demo
-- **Researching**: FAT/DLDI access on Ace3DS X flashcart via TwilightMenu++
-- **Todo**: Fix fatInit parameters, then complete video output
+- **Working**: CPU, GPU, CD-ROM, DMA, Timers, GTE, SIO, PAD, MDEC
+- **In Progress**: Sound (SPU), Display optimization, Controller integration
+- **Todo**: Sound implementation, display output optimization
 
 ## Research Log - 2026-04-18
 
@@ -60,7 +60,7 @@ You need a working `devkitPro` + `libnds` environment.
 make
 ```
 
-This should produce `psxnds.nds`.
+This should produce `PSXEmulDS.nds`.
 
 ## Project Layout
 

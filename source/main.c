@@ -74,7 +74,7 @@ static void draw_trace(const PsxState *psx) {
 static void draw_startup_message(const char *message) {
     consoleSelect(&g_top_console);
     consoleClear();
-    iprintf("psxnds\n\n");
+    iprintf("PSXEmulDS\n\n");
     iprintf("Starting up...\n");
     iprintf("%s\n", message);
 
@@ -337,7 +337,7 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
     consoleSelect(&g_top_console);
     consoleClear();
 
-    iprintf("psxnds proof of concept\n");
+    iprintf("PSXEmulDS proof of concept\n");
     iprintf("A:1  B:%lu  X:auto  Y:x8\n", (unsigned long)g_run_batch);
     iprintf("L/R: batch  START: reload\n");
     iprintf("SELECT: test mode  L: save tests\n\n");
