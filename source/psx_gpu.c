@@ -73,6 +73,21 @@ static void gpu_fill_rect_fast(PsxGpuState *gpu, int x, int y, int w, int h, uin
     gpu->vram_dirty = true;
 }
 
+static void gpu_fill_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, int x2, int y2, uint16_t color);
+
+static void gpu_fill_textured_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, int x2, int y2,
+                                     uint8_t u0, uint8_t v0, uint8_t u1, uint8_t v1, uint8_t u2, uint8_t v2,
+                                     int tex_x, int tex_y, uint8_t color) {
+    gpu_fill_triangle(gpu, x0, y0, x1, y1, x2, y2, gpu_rgb555(color, color, color));
+}
+
+static void gpu_fill_textured_quad(PsxGpuState *gpu, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3,
+                                 uint8_t u0, uint8_t v0, uint8_t u1, uint8_t v1, uint8_t u2, uint8_t v2, uint8_t u3, uint8_t v3,
+                                 int tex_x, int tex_y, uint8_t color) {
+    gpu_fill_triangle(gpu, x0, y0, x1, y1, x2, y2, gpu_rgb555(color, color, color));
+    gpu_fill_triangle(gpu, x0, y0, x2, y2, x3, y3, gpu_rgb555(color, color, color));
+}
+
 static void gpu_fill_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, int x2, int y2, uint16_t color) {
     if (y0 > y1) { int t; t=x0; x0=x1; x1=t; t=y0; y0=y1; y1=t; }
     if (y0 > y2) { int t; t=x0; x0=x2; x2=t; t=y0; y0=y2; y2=t; }
@@ -282,6 +297,57 @@ void gpu_exec_gp0(PsxGpuState *gpu, uint8_t cmd) {
         }
         break;
         
+    case 0x22:
+    case 0x26:
+        if (gpu->gp0_param_count >= 9) {
+            int x0 = (gpu->gp0_params[0] & 0x3FF) + gpu->draw_offset_x;
+            int y0 = (gpu->gp0_params[1] & 0x1FF) + gpu->draw_offset_y;
+            int x1 = (gpu->gp0_params[2] & 0x3FF) + gpu->draw_offset_x;
+            int y1 = (gpu->gp0_params[3] & 0x1FF) + gpu->draw_offset_y;
+            int x2 = (gpu->gp0_params[4] & 0x3FF) + gpu->draw_offset_x;
+            int y2 = (gpu->gp0_params[5] & 0x1FF) + gpu->draw_offset_y;
+
+            uint8_t u0 = gpu->gp0_params[6] & 0xFF;
+            uint8_t v0 = gpu->gp0_params[7] & 0xFF;
+            uint8_t u1 = gpu->gp0_params[8] & 0xFF;
+            uint8_t v1 = gpu->gp0_params[9] & 0xFF;
+            uint8_t u2 = gpu->gp0_params[10] & 0xFF;
+            uint8_t v2 = gpu->gp0_params[11] & 0xFF;
+
+            uint8_t color = gpu->gp0_params[12] & 0xFF;
+            gpu_fill_textured_triangle(gpu, x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2,
+                                 gpu->texture_base_x, gpu->texture_base_y, color);
+        }
+        break;
+
+    case 0x2A:
+    case 0x2E:
+        if (gpu->gp0_param_count >= 15) {
+            int x0 = (gpu->gp0_params[0] & 0x3FF) + gpu->draw_offset_x;
+            int y0 = (gpu->gp0_params[1] & 0x1FF) + gpu->draw_offset_y;
+            int x1 = (gpu->gp0_params[2] & 0x3FF) + gpu->draw_offset_x;
+            int y1 = (gpu->gp0_params[3] & 0x1FF) + gpu->draw_offset_y;
+            int x2 = (gpu->gp0_params[4] & 0x3FF) + gpu->draw_offset_x;
+            int y2 = (gpu->gp0_params[5] & 0x1FF) + gpu->draw_offset_y;
+            int x3 = (gpu->gp0_params[6] & 0x3FF) + gpu->draw_offset_x;
+            int y3 = (gpu->gp0_params[7] & 0x1FF) + gpu->draw_offset_y;
+
+            uint8_t u0 = gpu->gp0_params[8] & 0xFF;
+            uint8_t v0 = gpu->gp0_params[9] & 0xFF;
+            uint8_t u1 = gpu->gp0_params[10] & 0xFF;
+            uint8_t v1 = gpu->gp0_params[11] & 0xFF;
+            uint8_t u2 = gpu->gp0_params[12] & 0xFF;
+            uint8_t v2 = gpu->gp0_params[13] & 0xFF;
+            uint8_t u3 = gpu->gp0_params[14] & 0xFF;
+            uint8_t v3 = gpu->gp0_params[15] & 0xFF;
+
+            uint8_t color = gpu->gp0_params[16] & 0xFF;
+            gpu_fill_textured_quad(gpu, x0, y0, x1, y1, x2, y2, x3, y3,
+                                 u0, v0, u1, v1, u2, v2, u3, v3,
+                                 gpu->texture_base_x, gpu->texture_base_y, color);
+        }
+        break;
+
     case 0x28:
         if (gpu->gp0_param_count >= 6) {
             if (base == 0x28) {
