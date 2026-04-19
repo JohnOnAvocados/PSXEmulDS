@@ -144,6 +144,9 @@ typedef struct {
 #include "psx_gpu.h"
 #include "psx_dma.h"
 #include "psx_cdrom.h"
+#include "psx_gte.h"
+#include "psx_sio.h"
+#include "psx_memctrl.h"
 
 typedef struct {
     PsxCpuState cpu;
@@ -175,6 +178,9 @@ typedef struct {
 struct PsxGpuState *gpu;
     PsxDmaState *dma;
     struct PsxCdromState *cdrom;
+    PsxGteState *gte;
+    PsxSioState *sio;
+    PsxMemCtrlState *memctrl;
     uint32_t vblank_counter;
     
     // Memory system enhancements
@@ -210,6 +216,9 @@ void psx_record_error(PsxState *psx, uint16_t error_code, const char *descriptio
 void psx_init_gpu(PsxState *psx);
 void psx_init_dma(PsxState *psx);
 void psx_init_cdrom(PsxState *psx);
+void psx_init_gte(PsxState *psx);
+void psx_init_sio(PsxState *psx);
+void psx_init_memctrl(PsxState *psx);
 void psx_update_peripherals(PsxState *psx, uint32_t cycles);
 void psx_render_frame(PsxState *psx);
 

@@ -2,6 +2,9 @@
 #include "psx_gpu.h"
 #include "psx_dma.h"
 #include "psx_cdrom.h"
+#include "psx_gte.h"
+#include "psx_sio.h"
+#include "psx_memctrl.h"
 #include "psx_slot2.h"
 
 #include <stdio.h>
@@ -12,6 +15,9 @@
 #define PSX_GPU_BASE_ADDR 0x1F801810
 #define PSX_CDROM_BASE_ADDR 0x1F801800
 #define PSX_DMA_BASE_ADDR 0x1F801080
+#define PSX_GTE_BASE_ADDR 0x1F801820
+#define PSX_SIO_BASE_ADDR 0x1F801050
+#define PSX_MEMCTRL_BASE_ADDR 0x1F801000
 
 static const char *const psx_reg_names[32] = {
     "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
@@ -693,6 +699,9 @@ void psx_init(PsxState *psx) {
     psx_init_gpu(psx);
     psx_init_dma(psx);
     psx_init_cdrom(psx);
+    psx_init_gte(psx);
+    psx_init_sio(psx);
+    psx_init_memctrl(psx);
     psx_reset(psx);
 }
 
@@ -1004,6 +1013,27 @@ uint32_t psx_read32(PsxState *psx, uint32_t addr) {
         return 0;
     }
 
+    if (addr >= PSX_GTE_BASE_ADDR && addr < PSX_GTE_BASE_ADDR + 0x100) {
+        if (psx->gte) {
+            return gte_read32(psx->gte, addr);
+        }
+        return 0;
+    }
+
+    if (addr >= PSX_SIO_BASE_ADDR && addr < PSX_SIO_BASE_ADDR + 0x10) {
+        if (psx->sio) {
+            return sio_read32(psx->sio, addr);
+        }
+        return 0;
+    }
+
+    if (addr >= PSX_MEMCTRL_BASE_ADDR && addr < PSX_MEMCTRL_BASE_ADDR + 0x40) {
+        if (psx->memctrl) {
+            return memctrl_read32(psx->memctrl, addr);
+        }
+        return 0;
+    }
+
     if (bios_addr != UINT32_MAX && bios_addr + 3 < PSX_BIOS_SIZE) {
         return read_le32(&psx->bios[bios_addr]);
     }
@@ -1047,6 +1077,27 @@ void psx_write32(PsxState *psx, uint32_t addr, uint32_t value) {
     if (addr >= PSX_CDROM_BASE_ADDR && addr < PSX_CDROM_BASE_ADDR + 0x80) {
         if (psx->cdrom) {
             cdrom_write8(psx->cdrom, addr, value);
+        }
+        return;
+    }
+
+    if (addr >= PSX_GTE_BASE_ADDR && addr < PSX_GTE_BASE_ADDR + 0x100) {
+        if (psx->gte) {
+            gte_write32(psx->gte, addr, value);
+        }
+        return;
+    }
+
+    if (addr >= PSX_SIO_BASE_ADDR && addr < PSX_SIO_BASE_ADDR + 0x10) {
+        if (psx->sio) {
+            sio_write32(psx->sio, addr, value);
+        }
+        return;
+    }
+
+    if (addr >= PSX_MEMCTRL_BASE_ADDR && addr < PSX_MEMCTRL_BASE_ADDR + 0x40) {
+        if (psx->memctrl) {
+            memctrl_write32(psx->memctrl, addr, value);
         }
         return;
     }
@@ -1538,6 +1589,24 @@ void psx_init_dma(PsxState *psx) {
 void psx_init_cdrom(PsxState *psx) {
     memset(&g_cdrom, 0, sizeof(g_cdrom));
     psx->cdrom = &g_cdrom;
+}
+
+static PsxGteState g_gte;
+void psx_init_gte(PsxState *psx) {
+    memset(&g_gte, 0, sizeof(g_gte));
+    psx->gte = &g_gte;
+}
+
+static PsxSioState g_sio;
+void psx_init_sio(PsxState *psx) {
+    memset(&g_sio, 0, sizeof(g_sio));
+    psx->sio = &g_sio;
+}
+
+static PsxMemCtrlState g_memctrl;
+void psx_init_memctrl(PsxState *psx) {
+    memset(&g_memctrl, 0, sizeof(g_memctrl));
+    psx->memctrl = &g_memctrl;
 }
 
 void psx_update_peripherals(PsxState *psx, uint32_t cycles) {
