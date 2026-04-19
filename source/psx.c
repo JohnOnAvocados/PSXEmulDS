@@ -7,14 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-enum {
-    PSX_KSEG0_BASE = 0x80000000,
-    PSX_KSEG1_BASE = 0xA0000000,
-    PSX_RAM_MIRROR_SIZE = 0x00800000,
-    PSX_SCRATCHPAD_BASE = 0x1F800000,
-    PSX_IO_BASE = 0x1F801000,
-    PSX_BIOS_BASE = 0x1FC00000,
-};
+// Note: Memory constants are now defined in psx.h
 
 #define PSX_GPU_BASE_ADDR 0x1F801810
 #define PSX_CDROM_BASE_ADDR 0x1F801800
@@ -90,14 +83,67 @@ static void psx_halt(PsxState *psx, uint32_t pc, const char *reason) {
 
 void psx_trigger_irq(PsxState *psx, uint16_t irq_mask) {
     psx->pending_irqs |= irq_mask;
-    psx->cpu.cop0[13] |= 0x00000400;
+    // Set the hardware interrupt pending bit in COP0 Cause register
+    psx->cpu.cop0[13] |= (irq_mask << 8) | PSX_COP0_CAUSE_IP;
 }
 
 void psx_acknowledge_irq(PsxState *psx, uint16_t irq_mask) {
     psx->pending_irqs &= ~irq_mask;
     if (psx->pending_irqs == 0) {
-        psx->cpu.cop0[13] &= ~0x00000400;
+        // Clear all hardware interrupt pending bits except SW
+        psx->cpu.cop0[13] &= ~PSX_COP0_CAUSE_IP;
     }
+}
+
+// Exception handling
+static void psx_raise_exception(PsxState *psx, uint32_t exc_code, uint32_t addr) {
+    // Save EPC (checking for delay slot)
+    psx->cpu.cop0[14] = psx->cpu.pc;  // EPC
+    if (psx->cpu.in_delay_slot) {
+        psx->cpu.cop0[14] = psx->cpu.delay_slot;
+        psx->cpu.cop0[13] |= PSX_COP0_CAUSE_BD;  // Set BD bit
+    }
+    
+    // Set exception code in Cause register
+    psx->cpu.cop0[13] = (psx->cpu.cop0[13] & ~PSX_COP0_CAUSE_EXC) | (exc_code << 2);
+    
+    // Set BadVAddr if memory exception
+    if (exc_code == PSX_EXC_ADEL || exc_code == PSX_EXC_ADES) {
+        psx->cpu.cop0[8] = addr;  // BadVAddr
+    }
+    
+    // Set EXL bit in Status to force kernel mode
+    psx->cpu.cop0[12] |= PSX_COP0_SR_EXL;
+    
+    // Jump to exception vector (0x80000080)
+    psx->cpu.pc = 0x80000080;
+    psx->cpu.next_pc = psx->cpu.pc + 4;
+    psx->cpu.in_delay_slot = false;
+}
+
+// Check for unmapped memory access
+static bool psx_check_memory_error(PsxState *psx, uint32_t addr, bool is_write) {
+    uint32_t phys = addr & 0x007FFFFF;
+    
+    // Unused memory regions cause bus error
+    if (phys >= 0x00800000 && phys < 0x1F800000) {
+        // Expansion region - check if nothing mapped
+        return true;
+    }
+    if (phys >= 0x1F800400 && phys < 0x1F801000) {
+        // Gap between scratchpad and I/O
+        return true;
+    }
+    if (phys >= 0x1F802000 && phys < 0x1FA00000) {
+        // Gap in expansion region 2
+        return true;
+    }
+    if (phys >= 0x1FA00000 && phys < 0x1FC00000) {
+        // Expansion region 3 - only used for DTL cards
+        return true;
+    }
+    
+    return false;
 }
 
 bool psx_check_irq_pending(const PsxState *psx) {

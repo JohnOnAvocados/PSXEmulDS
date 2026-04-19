@@ -43,13 +43,71 @@
 // Write queue
 #define PSX_WRITE_QUEUE_SIZE 4
 
+// COP0 register indices
+#define PSX_COP0_INDEX     0
+#define PSX_COP0_RANDOM   1
+#define PSX_COP0_BPC    3
+#define PSX_COP0_BDA    4
+#define PSX_COP0_JUMP  5
+#define PSX_COP0_TLB   9
+#define PSX_COP0_PIDX  10
+#define PSX_COP0_TLBHI 12
+#define PSX_COP0_TLBLO 13
+#define PSX_COP0_TLBIX 14
+#define PSX_COP0_TLBHI 12
+#define PSX_COP0_PIDX  10
+#define PSX_COP0_BADV   8
+#define PSX_COP0_SR    12
+#define PSX_COP0_CAUSE 13
+#define PSX_COP0_EPC  14
+#define PSX_COP0_PRID 15
+#define PSX_COP0_CONFIG 16
+#define PSX_COP0_WATCHLO 18
+#define PSX_COP0_WATCHHI 19
+
+// COP0 Status register bits
+#define PSX_COP0_SR_IE   0x00000001
+#define PSX_COP0_SR_EXL  0x00000002
+#define PSX_COP0_SR_ERL  0x00000004
+#define PSX_COP0_SR_IM0  0x00000100
+#define PSX_COP0_SR_IM1  0x00000200
+#define PSX_COP0_SR_IM2  0x00000400
+#define PSX_COP0_SR_IM3  0x00000800
+#define PSX_COP0_SR_IM4  0x00001000
+#define PSX_COP0_SR_IM5  0x00002000
+#define PSX_COP0_SR_IM6  0x00004000
+#define PSX_COP0_SR_IM7  0x00008000
+#define PSX_COP0_SR_DE  0x00010000
+
+// COP0 Cause register bits
+#define PSX_COP0_CAUSE_EXC  0x0000003C
+#define PSX_COP0_CAUSE_IP   0x0000FF00
+#define PSX_COP0_CAUSE_CE  0x30000000
+#define PSX_COP0_CAUSE_BD  0x00010000
+
+// Exception codes
+#define PSX_EXC_INT    0x00
+#define PSX_EXC_MOD    0x04
+#define PSX_EXC_TLBL   0x08
+#define PSX_EXC_TLBS   0x0C
+#define PSX_EXC_ADEL   0x10
+#define PSX_EXC_ADES   0x14
+#define PSX_EXC_IBE    0x20
+#define PSX_EXC_DBE    0x24
+#define PSX_EXC_SYS    0x28
+#define PSX_EXC_BP     0x2C
+#define PSX_EXC_RI     0x30
+#define PSX_EXC_OV     0x34
+
 typedef struct {
     uint32_t gpr[32];
-    uint32_t cop0[32];
+    uint32_t cop0[32];  // Complete COP0 register set
     uint32_t hi;
     uint32_t lo;
     uint32_t pc;
     uint32_t next_pc;
+    uint32_t delay_slot;  // PC of delay slot instruction
+    bool in_delay_slot;
 } PsxCpuState;
 
 typedef struct {
