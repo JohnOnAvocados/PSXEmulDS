@@ -127,7 +127,8 @@ main.o: C:/DS_Homebrew/PSXEmulDS/source/main.c \
  C:/DS_Homebrew/PSXEmulDS/include/psx_menu.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx_debug.h \
- C:/DS_Homebrew/PSXEmulDS/include/psx_pad.h
+ C:/DS_Homebrew/PSXEmulDS/include/psx_pad.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_spu.h
 C:/devkitPro/libnds/include/nds.h:
 C:/devkitPro/calico/include/calico.h:
 C:/devkitPro/calico/include/calico/types.h:
@@ -259,3 +260,4 @@ C:/DS_Homebrew/PSXEmulDS/include/psx_menu.h:
 C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h:
 C:/DS_Homebrew/PSXEmulDS/include/psx_debug.h:
 C:/DS_Homebrew/PSXEmulDS/include/psx_pad.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_spu.h:

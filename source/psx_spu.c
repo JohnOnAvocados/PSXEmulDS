@@ -1,6 +1,7 @@
 #include "psx_spu.h"
 
 #include <string.h>
+#include <stdio.h>
 
 #if PSX_SPU_ENABLED
 
@@ -323,4 +324,69 @@ void spu_update(PsxSpuState *spu, int16_t *buffer, int num_samples) {
 #endif
 }
 
+#if PSX_SPU_SIMPLE_AUDIO
+
+#include <nds.h>
+
+#define SPU_AUDIO_BUFFER_SIZE 1024
+
+static int16_t g_audio_buffer[SPU_AUDIO_BUFFER_SIZE * 2];
+static int g_audio_channel = -1;
+static bool g_audio_initialized = false;
+static bool g_audio_ready = false;
+
+void spu_audio_init(void) {
+    if (g_audio_initialized) {
+        return;
+    }
+
+    soundEnable();
+    g_audio_initialized = true;
+    g_audio_ready = true;
+
+    memset(g_audio_buffer, 0, sizeof(g_audio_buffer));
+
+    g_audio_channel = soundPlaySample(
+        g_audio_buffer,
+        SoundFormat_16Bit,
+        sizeof(g_audio_buffer),
+        PSX_SPU_SAMPLE_RATE,
+        64,
+        64,
+        true,
+        0
+    );
+
+    if (g_audio_channel >= 0) {
+        iprintf("SPU audio: channel %d\n", g_audio_channel);
+    } else {
+        iprintf("SPU audio: failed to start\n");
+        g_audio_ready = false;
+    }
+}
+
+void spu_audio_update(PsxSpuState *spu) {
+    if (!g_audio_ready || g_audio_channel < 0) {
+        return;
+    }
+
+    static int16_t mixed_buffer[SPU_AUDIO_BUFFER_SIZE * 2];
+    spu_update(spu, mixed_buffer, SPU_AUDIO_BUFFER_SIZE);
+}
+
+bool spu_audio_ready(void) {
+    return g_audio_ready;
+}
+
+void spu_audio_shutdown(void) {
+    if (g_audio_channel >= 0) {
+        soundKill(g_audio_channel);
+        g_audio_channel = -1;
+    }
+    soundDisable();
+    g_audio_initialized = false;
+    g_audio_ready = false;
+}
+
+#endif
 #endif

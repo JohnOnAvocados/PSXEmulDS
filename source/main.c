@@ -14,6 +14,7 @@
 #include "psx_gpu.h"
 #include "psx_debug.h"
 #include "psx_pad.h"
+#include "psx_spu.h"
 
 typedef struct {
     bool fat_ready;
@@ -584,6 +585,11 @@ int main(void) {
     iprintf("FAT: %s\n", g_boot.fat_ready ? "OK" : "FAIL");
     iprintf("BIOS: %s\n", g_boot.bios_loaded ? "LOADED" : "NONE");
     iprintf("RAM: %s (%luKB)\n", g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
+
+#if PSX_SPU_SIMPLE_AUDIO
+    spu_audio_init();
+    iprintf("SPU: %s\n", spu_audio_ready() ? "READY" : "DISABLED");
+#endif
 
      swiWaitForVBlank();
      swiWaitForVBlank();

@@ -5,11 +5,14 @@
 #include <stdint.h>
 
 #define PSX_SPU_ENABLED 1
+#define PSX_SPU_SIMPLE_AUDIO 1
 
 #define PSX_SPU_BASE_ADDR 0x1F801C00
 #define PSX_SPU_SIZE 0x400
 
 #define PSX_SPU_VOICE_COUNT 24
+#define PSX_SPU_SAMPLE_RATE 44100
+#define PSX_SPU_NUM_CHANNELS 2
 
 #define PSX_SPU_MAIN_VOLUME_LEFT   0x1F801C00
 #define PSX_SPU_MAIN_VOLUME_RIGHT  0x1F801C02
@@ -67,5 +70,12 @@ void spu_write32(PsxSpuState *spu, uint32_t addr, uint32_t value);
 void spu_write16(PsxSpuState *spu, uint32_t addr, uint16_t value);
 void spu_write8(PsxSpuState *spu, uint32_t addr, uint8_t value);
 void spu_update(PsxSpuState *spu, int16_t *buffer, int num_samples);
+
+#if PSX_SPU_SIMPLE_AUDIO
+void spu_audio_init(void);
+void spu_audio_update(PsxSpuState *spu);
+void spu_audio_shutdown(void);
+bool spu_audio_ready(void);
+#endif
 
 #endif
