@@ -13,6 +13,7 @@
 #include "psx_menu.h"
 #include "psx_gpu.h"
 #include "psx_debug.h"
+#include "psx_pad.h"
 
 typedef struct {
     bool fat_ready;
@@ -53,6 +54,8 @@ static bool g_auto_run = false;
 static uint32_t g_run_batch = 128;
 static GameMenu g_menu;
 static bool g_emulator_mode = false;
+static PsxPadState g_pad;
+static uint32_t g_last_pad_buttons = 0;
 
 static void draw_trace(const PsxState *psx) {
     uint32_t i;
@@ -600,9 +603,24 @@ int main(void) {
     while (1) {
         int keys_pressed;
         bool redraw = false;
+        uint32_t ps1_buttons = 0;
 
         scanKeys();
         keys_pressed = keysDown();
+
+        uint32_t held_keys = keysHeld();
+        if (held_keys & KEY_UP) ps1_buttons |= PSX_PAD_DPAD_UP;
+        if (held_keys & KEY_DOWN) ps1_buttons |= PSX_PAD_DPAD_DOWN;
+        if (held_keys & KEY_LEFT) ps1_buttons |= PSX_PAD_DPAD_LEFT;
+        if (held_keys & KEY_RIGHT) ps1_buttons |= PSX_PAD_DPAD_RIGHT;
+        if (held_keys & KEY_A) ps1_buttons |= PSX_PAD_BUTTON_CROSS;
+        if (held_keys & KEY_B) ps1_buttons |= PSX_PAD_BUTTON_CIRCLE;
+        if (held_keys & KEY_X) ps1_buttons |= PSX_PAD_BUTTON_TRIANGLE;
+        if (held_keys & KEY_Y) ps1_buttons |= PSX_PAD_BUTTON_SQUARE;
+        if (held_keys & KEY_START) ps1_buttons |= PSX_PAD_BUTTON_START;
+        if (held_keys & KEY_SELECT) ps1_buttons |= PSX_PAD_BUTTON_SELECT;
+        if (held_keys & KEY_L) ps1_buttons |= PSX_PAD_BUTTON_L1;
+        if (held_keys & KEY_R) ps1_buttons |= PSX_PAD_BUTTON_R1;
 
         if (keys_pressed & KEY_A) {
             psx_step(&g_psx);

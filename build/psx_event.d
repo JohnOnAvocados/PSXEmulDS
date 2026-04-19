@@ -1,0 +1,19 @@
+psx_event.o: C:/DS_Homebrew/PSXEmulDS/source/psx_event.c \
+ C:/DS_Homebrew/PSXEmulDS/include/psx.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_dma.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_gte.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_sio.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_memctrl.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_event.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx.h
+C:/DS_Homebrew/PSXEmulDS/include/psx.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_dma.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_gte.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_sio.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_memctrl.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_event.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx.h:

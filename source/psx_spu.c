@@ -2,6 +2,13 @@
 
 #include <string.h>
 
+#if PSX_SPU_ENABLED
+
+static const int16_t spu_adpcm_table[16] = {
+    0, 1, 2, 4, 8, 16, 32, 64,
+    -128, -256, -512, -1024, -2048, -4096, -8192, -16384
+};
+
 static uint32_t spu_to_offset(uint32_t addr) {
     if (addr >= PSX_SPU_BASE_ADDR && addr < PSX_SPU_BASE_ADDR + PSX_SPU_SIZE) {
         return addr - PSX_SPU_BASE_ADDR;
@@ -272,12 +279,48 @@ static void spu_process_envelope(PsxSpuState *spu, int voice) {
 }
 
 void spu_update(PsxSpuState *spu, int16_t *buffer, int num_samples) {
+#if PSX_SPU_ENABLED
     for (int v = 0; v < 24; v++) {
-        spu_process_envelope(spu, v);
+        if (spu->voice_mode[v] & 0x3FF) {
+            spu_process_envelope(spu, v);
+        }
     }
-    
+
+    for (int i = 0; i < num_samples; i++) {
+        int32_t sample_l = 0;
+        int32_t sample_r = 0;
+
+        for (int v = 0; v < 24; v++) {
+            uint16_t env = spu->voice_env[v];
+            uint8_t state = (env >> 14) & 3;
+            if (state == 0) continue;
+
+            int16_t level = (int16_t)(env & 0x7FFF);
+            if (level == 0) continue;
+
+            uint16_t vol_l = spu->voice_vol_l[v];
+            uint16_t vol_r = spu->voice_vol_r[v];
+
+            int32_t voice_sample = (level >> 8);
+            sample_l += (voice_sample * (int16_t)vol_l) >> 14;
+            sample_r += (voice_sample * (int16_t)vol_r) >> 14;
+        }
+
+        sample_l = (sample_l * (int16_t)spu->main_vol_left) >> 14;
+        sample_r = (sample_r * (int16_t)spu->main_vol_right) >> 14;
+
+        sample_l = sample_l > 32767 ? 32767 : (sample_l < -32768 ? -32768 : sample_l);
+        sample_r = sample_r > 32767 ? 32767 : (sample_r < -32768 ? -32768 : sample_r);
+
+        buffer[i * 2 + 0] = (int16_t)sample_l;
+        buffer[i * 2 + 1] = (int16_t)sample_r;
+    }
+#else
     for (int i = 0; i < num_samples; i++) {
         buffer[i * 2 + 0] = 0;
         buffer[i * 2 + 1] = 0;
     }
+#endif
 }
+
+#endif

@@ -4,8 +4,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define PSX_SPU_ENABLED 1
+
 #define PSX_SPU_BASE_ADDR 0x1F801C00
 #define PSX_SPU_SIZE 0x400
+
+#define PSX_SPU_VOICE_COUNT 24
 
 #define PSX_SPU_MAIN_VOLUME_LEFT   0x1F801C00
 #define PSX_SPU_MAIN_VOLUME_RIGHT  0x1F801C02
