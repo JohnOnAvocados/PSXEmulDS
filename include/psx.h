@@ -173,7 +173,7 @@ typedef struct {
     PsxTestResult test_result;
     bool test_mode;
 struct PsxGpuState *gpu;
-    struct PsxDmaState *dma;
+    PsxDmaState *dma;
     struct PsxCdromState *cdrom;
     uint32_t vblank_counter;
     

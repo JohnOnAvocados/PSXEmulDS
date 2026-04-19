@@ -529,11 +529,11 @@
 02021d4c 0000005c T __aeabi_d2iz
 02021d4c 0000005c T __fixdfsi
 02021da8 T _fini
-02021db8 00000008 t __memcpy_from_arm
-02021dc0 00000008 t ____libc_lock_release_from_arm
-02021dc8 00000008 t ____aeabi_ldiv0_from_arm
-02021dd0 00000008 t ____aeabi_idiv0_from_arm
-02021dd8 00000008 t __free_from_arm
+02021db8 00000008 t ____aeabi_ldiv0_from_arm
+02021dc0 00000008 t __free_from_arm
+02021dc8 00000008 t ____libc_lock_release_from_arm
+02021dd0 00000008 t __memcpy_from_arm
+02021dd8 00000008 t ____aeabi_idiv0_from_arm
 020232fc 0000000c t candidate_paths.0
 02023308 00000024 t bios_paths.1
 02023308 00000024 t bios_paths.2
@@ -634,65 +634,65 @@
 0203276c a __loadlist_start
 0203279c a __loadlist_end
 022b3c58 00000960 b g_cdrom
-022b45b8 00000090 b g_dma
-022b4648 00022360 b g_gpu
-022d69a8 00000001 b g_debug_ready
-022d69ac 00000004 b g_debug_pos
-022d69b0 00002000 b g_debug_buffer
-022d89b0 0000003c b g_slot2
-022d89ec 00000004 V g_dvmCalicoNandMount
-022d89f0 00000002 b Fsid
-022d89f4 0000005c B currentCopy
-022d8a50 00000002 b keysrepeat
-022d8a54 00000004 b s_keypad
-022d8a58 W g_excptHandler
-022d8a5c 00000008 B bgIsTextLut
-022d8a64 00000140 B bgState
-022d8ba4 00000008 b s_sleepThreads
-022d8bac 00000008 b s_joinThreads
-022d8bb4 00000070 b s_idleThread
-022d8c24 00000070 b s_mainThread
-022d8c94 00000004 b s_defaultErrno.0
-022d8c98 00000004 V __stacksize__
-022d8c9c 00000001 B g_isTwlMode
-022d8ca0 000001f0 b s_pxiChannels
-022d8e90 00000004 b s_pxiRecvState
-022d8e94 00000008 b s_pxiRecvQueue
-022d8e9c 00000004 b s_pxiSendMutex
-022d8ea0 00000004 b s_firstTask
-022d8ea8 00000008 b s_highTickCount
-022d8eb0 00000001 b s_tickInit
-022d8eb4 00000008 b s_mailboxRecvQueue
-022d8ec0 00000200 b s_pmPxiThreadStack
-022d90c0 00000070 b s_pmPxiThread
-022d9130 00000008 b s_pmState
-022d9138 00000028 B __malloc_current_mallinfo
-022d9160 00000004 B __malloc_max_total_mem
-022d9164 00000004 B __malloc_max_sbrked_mem
-022d9168 00000004 B __malloc_top_pad
-022d916c 0000000c b __sfp_recursive_mutex
-022d9178 00000168 B __sf
-022d92e0 00000004 B __stdio_exit_handler
-022d92e4 0000000c b __malloc_recursive_mutex
-022d92f0 00000004 b prev_tzenv
-022d92f4 0000000c b __tzname_dst
-022d9300 0000000c b __tzname_std
-022d930c 0000000c b __env_recursive_mutex
-022d9318 00000004 B _timezone
-022d931c 00000004 B _daylight
-022d9320 00000004 b __tz_mutex
-022d9324 00000004 b initial_env
-022d9328 00000400 b temp_cwd
-022d9728 00000004 b __hndl_lock
-022d972c 00000004 B fake_heap_start
-022d9730 00000004 B fake_heap_end
-022d9734 00000004 b heap_start.0
-022d9738 b __heap_start_ntr
-022d9738 b __main_bss_end
-022d9740 r __heap_start_twl
-022d9740 ? __twl_bss_end
-022d9740 ? __twl_end
-022d9740 ? __twl_start
+022b45b8 00000074 b g_dma
+022b462c 00022360 b g_gpu
+022d698c 00000001 b g_debug_ready
+022d6990 00000004 b g_debug_pos
+022d6994 00002000 b g_debug_buffer
+022d8998 0000003c b g_slot2
+022d89d4 00000004 V g_dvmCalicoNandMount
+022d89d8 00000002 b Fsid
+022d89dc 0000005c B currentCopy
+022d8a38 00000002 b keysrepeat
+022d8a3c 00000004 b s_keypad
+022d8a40 W g_excptHandler
+022d8a44 00000008 B bgIsTextLut
+022d8a4c 00000140 B bgState
+022d8b8c 00000008 b s_sleepThreads
+022d8b94 00000008 b s_joinThreads
+022d8b9c 00000070 b s_idleThread
+022d8c0c 00000070 b s_mainThread
+022d8c7c 00000004 b s_defaultErrno.0
+022d8c80 00000004 V __stacksize__
+022d8c84 00000001 B g_isTwlMode
+022d8c88 000001f0 b s_pxiChannels
+022d8e78 00000004 b s_pxiRecvState
+022d8e7c 00000008 b s_pxiRecvQueue
+022d8e84 00000004 b s_pxiSendMutex
+022d8e88 00000004 b s_firstTask
+022d8e90 00000008 b s_highTickCount
+022d8e98 00000001 b s_tickInit
+022d8e9c 00000008 b s_mailboxRecvQueue
+022d8ea8 00000200 b s_pmPxiThreadStack
+022d90a8 00000070 b s_pmPxiThread
+022d9118 00000008 b s_pmState
+022d9120 00000028 B __malloc_current_mallinfo
+022d9148 00000004 B __malloc_max_total_mem
+022d914c 00000004 B __malloc_max_sbrked_mem
+022d9150 00000004 B __malloc_top_pad
+022d9154 0000000c b __sfp_recursive_mutex
+022d9160 00000168 B __sf
+022d92c8 00000004 B __stdio_exit_handler
+022d92cc 0000000c b __malloc_recursive_mutex
+022d92d8 00000004 b prev_tzenv
+022d92dc 0000000c b __tzname_dst
+022d92e8 0000000c b __tzname_std
+022d92f4 0000000c b __env_recursive_mutex
+022d9300 00000004 B _timezone
+022d9304 00000004 B _daylight
+022d9308 00000004 b __tz_mutex
+022d930c 00000004 b initial_env
+022d9310 00000400 b temp_cwd
+022d9710 00000004 b __hndl_lock
+022d9714 00000004 B fake_heap_start
+022d9718 00000004 B fake_heap_end
+022d971c 00000004 b heap_start.0
+022d9720 b __heap_start_ntr
+022d9720 r __heap_start_twl
+022d9720 b __main_bss_end
+022d9720 ? __twl_bss_end
+022d9720 ? __twl_end
+022d9720 ? __twl_start
 02400000 a __twl_lma
 02400000 a __twl_loadlist_lma
 02400000 a __twl_loadlist_start
