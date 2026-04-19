@@ -702,6 +702,7 @@ void psx_init(PsxState *psx) {
     psx_init_gte(psx);
     psx_init_sio(psx);
     psx_init_memctrl(psx);
+    psx_init_slot2(psx);
     psx_reset(psx);
 }
 
@@ -1607,6 +1608,25 @@ static PsxMemCtrlState g_memctrl;
 void psx_init_memctrl(PsxState *psx) {
     memset(&g_memctrl, 0, sizeof(g_memctrl));
     psx->memctrl = &g_memctrl;
+}
+
+static Slot2Device g_slot2_device;
+void psx_init_slot2(PsxState *psx) {
+    slot2_init();
+    slot2_detect();
+    
+    psx->slot2 = &g_slot2_device;
+    
+    size_t ram_size = slot2_get_ram_size();
+    if (ram_size > 0) {
+        psx->ram = slot2_get_device()->buffer;
+        psx->ram_size = ram_size;
+        snprintf(psx->ram_backend_name, sizeof(psx->ram_backend_name), "Slot2-%luKB", (unsigned long)(ram_size / 1024));
+    } else {
+        psx->ram = psx->ram_internal;
+        psx->ram_size = sizeof(psx->ram_internal);
+        snprintf(psx->ram_backend_name, sizeof(psx->ram_backend_name), "Internal");
+    }
 }
 
 void psx_update_peripherals(PsxState *psx, uint32_t cycles) {
