@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdbool.h>
+#include <stdint.h>
 #include <fat.h>
 
 #include "psx.h"
@@ -152,21 +153,7 @@ static void test_save_results(TestSuite *suite) {
     fclose(fp);
 }
 
-static void test_run_incremental(TestSuite *suite, uint32_t num_instructions) {
-    if (!g_psx.halted) {
-        psx_run(&g_psx, num_instructions);
-        
-        if (g_psx.halted) {
-            test_record_result(suite, suite->current_test + 1, false, 
-                             g_psx.test_result.error_code,
-                             g_psx.halt_reason);
-        } else {
-            test_record_result(suite, suite->current_test + 1, true, 0, "completed");
-        }
-    } else {
-        test_record_result(suite, suite->current_test + 1, false, 0xFFFF, "already halted");
-    }
-}
+/* Unused function removed */
 
 static bool read_file(const char *path, uint8_t **out_data, size_t *out_size) {
     FILE *fp;
@@ -248,8 +235,8 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
     };
     size_t i;
 
-    draw_startup_message("Mounting FAT...");
-    boot->fat_ready = fatInitDefault();
+    draw_startup_message("Checking FAT...");
+    boot->fat_ready = g_boot.fat_ready; // Use FAT status from main()
     boot->bios_loaded = false;
     boot->exe_loaded = false;
     boot->bin_loaded = false;
@@ -260,23 +247,28 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
         return;
     }
 
-    draw_startup_message("Scanning BIOS...");
-    for (i = 0; i < sizeof(bios_paths) / sizeof(bios_paths[0]); i++) {
-        uint8_t *buffer = NULL;
-        size_t buffer_size = 0;
+     draw_startup_message("Scanning BIOS...");
+     for (i = 0; i < sizeof(bios_paths) / sizeof(bios_paths[0]); i++) {
+         uint8_t *buffer = NULL;
+         size_t buffer_size = 0;
 
-        if (!read_file(bios_paths[i], &buffer, &buffer_size)) {
-            continue;
-        }
+         debug_log("Trying BIOS path: %s", bios_paths[i]);
 
-        if (psx_load_bios(psx, buffer, buffer_size)) {
-            boot->bios_loaded = true;
-            free(buffer);
-            break;
-        }
+         if (!read_file(bios_paths[i], &buffer, &buffer_size)) {
+             debug_log("Failed to read BIOS file: %s", bios_paths[i]);
+             continue;
+         }
 
-        free(buffer);
-    }
+         if (psx_load_bios(psx, buffer, buffer_size)) {
+             boot->bios_loaded = true;
+             debug_log("BIOS loaded successfully from %s", bios_paths[i]);
+             free(buffer);
+             break;
+         }
+
+         debug_log("Failed to load BIOS from %s", bios_paths[i]);
+         free(buffer);
+     }
 
     draw_startup_message("Scanning PS-X EXE...");
     for (i = 0; i < sizeof(candidate_paths) / sizeof(candidate_paths[0]); i++) {
@@ -552,7 +544,35 @@ int main(void) {
     }
 
     debug_log("Loading BIOS...");
-    g_boot.bios_loaded = psx_load_bios(&g_psx, NULL, 0);
+    g_boot.bios_loaded = false;
+    static const char *const bios_paths[] = {
+        "/psx/SCPH1001.BIN",
+        "/psx/scph1001.bin",
+        "/psx/SCPH1000.BIN",
+        "/psx/scph1000.bin",
+        "/PSX/SCPH1001.BIN",
+        "/PSX/scph1001.bin",
+        "/PSX/SCPH1000.BIN",
+        "/PSX/scph1000.bin",
+        "/psx/bios.bin",
+    };
+    size_t i;
+    for (i = 0; i < sizeof(bios_paths) / sizeof(bios_paths[0]); i++) {
+        uint8_t *buffer = NULL;
+        size_t buffer_size = 0;
+
+        if (!read_file(bios_paths[i], &buffer, &buffer_size)) {
+            continue;
+        }
+
+        if (psx_load_bios(&g_psx, buffer, buffer_size)) {
+            g_boot.bios_loaded = true;
+            free(buffer);
+            break;
+        }
+
+        free(buffer);
+    }
     debug_log("BIOS: %d", g_boot.bios_loaded);
 
     consoleSelect(&g_top_console);
@@ -562,17 +582,18 @@ int main(void) {
     iprintf("BIOS: %s\n", g_boot.bios_loaded ? "LOADED" : "NONE");
     iprintf("RAM: %s (%luKB)\n", g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
 
-    swiWaitForVBlank();
-    swiWaitForVBlank();
-    swiWaitForVBlank();
+     swiWaitForVBlank();
+     swiWaitForVBlank();
+     swiWaitForVBlank();
 
-    run_menu_mode();
+     run_menu_mode();
 
-    if (!g_emulator_mode) {
-        memset(&g_boot, 0, sizeof(g_boot));
-        g_auto_run = true;
-        g_run_batch = 1024;
-    }
+     if (!g_emulator_mode) {
+         // Try to load an executable from SD card if we haven't already booted via menu
+         try_load_exe(&g_psx, &g_boot);
+         g_auto_run = true;
+         g_run_batch = 1024;
+     }
 
     draw_state(&g_psx, &g_boot, total_steps);
 

@@ -102,11 +102,7 @@ static void gpu_fill_triangle(PsxGpuState *gpu, int x0, int y0, int x1, int y1, 
     gpu->vram_dirty = true;
 }
 
-static void gpu_fill_quad(PsxGpuState *gpu, int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3, uint16_t color) {
-    gpu_fill_triangle(gpu, x0, y0, x1, y1, x2, y2, color);
-    gpu_fill_triangle(gpu, x0, y0, x2, y2, x3, y3, color);
-    gpu->vram_dirty = true;
-}
+/* Unused function removed */
 
 static void gpu_draw_line(PsxGpuState *gpu, int x0, int y0, int x1, int y1, uint16_t color) {
     int dx = x1 - x0;

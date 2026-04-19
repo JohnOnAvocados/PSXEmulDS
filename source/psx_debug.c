@@ -53,7 +53,7 @@ void debug_log_hexdump(const char *label, const void *data, uint32_t len) {
         p += snprintf(p, sizeof(line), "%08lx: ", (unsigned long)i);
 
         for (uint32_t j = 0; j < 16 && i + j < len; j++) {
-            p += snprintf(p, 3, "%02x ", buf[i + j]);
+             p += snprintf(p, 4, "%02x ", buf[i + j]);
         }
 
         *p = '\0';

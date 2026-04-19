@@ -18,9 +18,8 @@
 #define PSX_IRQ_TIMER0    (1 << 4)
 #define PSX_IRQ_TIMER1    (1 << 5)
 #define PSX_IRQ_TIMER2    (1 << 6)
-#define PSX_IRQ_SIO       (1 << 7)
-#define PSX_IRQ_SPU       (1 << 8)
-#define PSX_IRQ_EXTERNAL  (1 << 9)
+#define PSX_IRQ_SPU       (1 << 7)
+#define PSX_IRQ_EXTERNAL  (1 << 8)
 
 #define PSX_TIMER_MODE_IRQ    (1 << 10)
 #define PSX_TIMER_MODE_REPEAT (1 << 9)
@@ -51,9 +50,9 @@ typedef struct {
     char error_description[128];
 } PsxTestResult;
 
-struct PsxGpuState;
-struct PsxDmaState;
-struct PsxCdromState;
+#include "psx_gpu.h"
+#include "psx_dma.h"
+#include "psx_cdrom.h"
 
 typedef struct {
     PsxCpuState cpu;
@@ -71,8 +70,8 @@ typedef struct {
     uint32_t last_opcode;
     uint32_t halt_pc;
     char halt_reason[64];
-    char last_disasm[48];
-    char trace[PSX_TRACE_LINES][48];
+    char last_disasm[64];
+    char trace[PSX_TRACE_LINES][64];
     uint32_t trace_pos;
     uint32_t trace_count;
     uint32_t last_io_addr;
