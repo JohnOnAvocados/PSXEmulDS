@@ -776,19 +776,19 @@ Discarded input sections
  .text.spu_write8
                 0x00000000       0x14 psx_spu.o
  .text.spu_update
-                0x00000000       0x18 psx_spu.o
- .debug_info    0x00000000      0x7c4 psx_spu.o
- .debug_abbrev  0x00000000      0x252 psx_spu.o
+                0x00000000      0x160 psx_spu.o
+ .debug_info    0x00000000      0x95e psx_spu.o
+ .debug_abbrev  0x00000000      0x301 psx_spu.o
  .debug_loclists
-                0x00000000      0xa4e psx_spu.o
+                0x00000000      0xe69 psx_spu.o
  .debug_aranges
                 0x00000000       0x60 psx_spu.o
  .debug_rnglists
-                0x00000000       0x9d psx_spu.o
- .debug_line    0x00000000      0x621 psx_spu.o
- .debug_str     0x00000000      0x341 psx_spu.o
+                0x00000000       0xd3 psx_spu.o
+ .debug_line    0x00000000      0x791 psx_spu.o
+ .debug_str     0x00000000      0x3a0 psx_spu.o
  .comment       0x00000000       0x19 psx_spu.o
- .debug_frame   0x00000000       0xd0 psx_spu.o
+ .debug_frame   0x00000000       0xec psx_spu.o
  .text          0x00000000        0x0 C:/devkitPro/libnds/lib\libfat.a(fat_wrappers.o)
  .data          0x00000000        0x0 C:/devkitPro/libnds/lib\libfat.a(fat_wrappers.o)
  .bss           0x00000000        0x0 C:/devkitPro/libnds/lib\libfat.a(fat_wrappers.o)
