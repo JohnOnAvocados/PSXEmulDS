@@ -196,7 +196,7 @@ void psx_use_slot2_ram(PsxState *psx, uint8_t *slot2_buffer, size_t slot2_size);
 bool psx_set_ram_backing(PsxState *psx, uint8_t *buffer, size_t size, const char *backend_name);
 void psx_step(PsxState *psx);
 uint32_t psx_run(PsxState *psx, uint32_t max_steps);
-uint32_t psx_read32(const PsxState *psx, uint32_t addr);
+uint32_t psx_read32(PsxState *psx, uint32_t addr);
 void psx_write32(PsxState *psx, uint32_t addr, uint32_t value);
 void psx_trigger_irq(PsxState *psx, uint16_t irq_mask);
 void psx_acknowledge_irq(PsxState *psx, uint16_t irq_mask);
