@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #define PSX_CDROM_REG_INDEX        0x00
 #define PSX_CDROM_REG_RESPONSE     0x01

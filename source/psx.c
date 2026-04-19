@@ -28,13 +28,15 @@ static const char *const psx_reg_names[32] = {
 };
 
 static inline uint32_t psx_to_physical(uint32_t addr) {
-    if (addr >= 0x80000000) {
+    // Handle KSEG0 and KSEG1 (cached and uncached kernel spaces)
+    if (addr >= 0x80000000 && addr < 0xA0000000) { // KSEG0
         return addr & 0x007FFFFF;
     }
-    if (addr >= 0xA0000000) {
+    if (addr >= 0xA0000000) { // KSEG1 and KSEG2
         return addr & 0x007FFFFF;
     }
-    return addr;
+    // KUSEG (user space) - same physical mapping as KSEG0/KSEG1
+    return addr & 0x007FFFFF;
 }
 
 static inline uint32_t psx_translate_ram(const PsxState *psx, uint32_t addr) {

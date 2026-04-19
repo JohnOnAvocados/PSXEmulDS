@@ -113,6 +113,9 @@ main.o: C:/DS_Homebrew/PSXEmulDS/source/main.c \
  C:/devkitPro/libnds/include/nds/arm9/videoGL.h \
  C:/devkitPro/libnds/include/fat.h C:/devkitPro/libnds/include/dvm.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_dma.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx_exe.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx_slot2.h \
@@ -236,6 +239,9 @@ C:/devkitPro/libnds/include/nds/arm9/videoGL.h:
 C:/devkitPro/libnds/include/fat.h:
 C:/devkitPro/libnds/include/dvm.h:
 C:/DS_Homebrew/PSXEmulDS/include/psx.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_dma.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_cdrom.h:
 C:/DS_Homebrew/PSXEmulDS/include/psx_exe.h:
 C:/DS_Homebrew/PSXEmulDS/include/psx.h:
 C:/DS_Homebrew/PSXEmulDS/include/psx_slot2.h:

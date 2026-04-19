@@ -1,11 +1,12 @@
 #ifndef PSX_H
 #define PSX_H
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define PSX_RAM_SIZE (1 * 1024 * 1024)
+#define PSX_RAM_SIZE (2 * 1024 * 1024)  // PSX has 2MB RAM
 #define PSX_BIOS_SIZE (512 * 1024)
 #define PSX_SCRATCHPAD_SIZE 1024
 #define PSX_IO_SIZE 4096
@@ -24,6 +25,24 @@
 #define PSX_TIMER_MODE_IRQ    (1 << 10)
 #define PSX_TIMER_MODE_REPEAT (1 << 9)
 #define PSX_TIMER_MODE_32BIT (1 << 8)
+
+// Memory region constants
+#define PSX_KSEG0_BASE 0x80000000
+#define PSX_KSEG1_BASE 0xA0000000
+#define PSX_KSEG2_BASE 0xC0000000
+#define PSX_KUSEG_BASE 0x00000000
+
+// Memory mirroring
+#define PSX_RAM_MIRROR_SIZE 0x00800000  // 2MB RAM mirrors to first 8MB
+#define PSX_BIOS_MIRROR_SIZE 0x00400000 // 512K BIOS mirrors to last 4MB
+
+// Cache constants
+#define PSX_ICACHE_SIZE 4096
+#define PSX_ICACHE_LINE_SIZE 16
+#define PSX_ICACHE_LINE_COUNT (PSX_ICACHE_SIZE / PSX_ICACHE_LINE_SIZE)
+
+// Write queue
+#define PSX_WRITE_QUEUE_SIZE 4
 
 typedef struct {
     uint32_t gpr[32];
@@ -49,6 +68,21 @@ typedef struct {
     uint32_t opcode_at_error;
     char error_description[128];
 } PsxTestResult;
+
+// i-Cache line structure
+typedef struct {
+    uint32_t tag;          // Physical address tag
+    uint8_t valid;         // Valid bits for 4 words in line
+    uint8_t data[PSX_ICACHE_LINE_SIZE]; // Cached data
+} PsxICacheLine;
+
+// Write queue entry
+typedef struct {
+    uint32_t address;
+    uint32_t value;
+    uint8_t size;          // 1=byte, 2=halfword, 4=word
+    bool is_write;
+} PsxWriteQueueEntry;
 
 #include "psx_gpu.h"
 #include "psx_dma.h"
@@ -85,6 +119,13 @@ typedef struct {
     struct PsxDmaState *dma;
     struct PsxCdromState *cdrom;
     uint32_t vblank_counter;
+    
+    // Memory system enhancements
+    PsxICacheLine icache[PSX_ICACHE_LINE_COUNT];
+    PsxWriteQueueEntry write_queue[PSX_WRITE_QUEUE_SIZE];
+    int write_queue_head;
+    int write_queue_tail;
+    int write_queue_count;
 } PsxState;
 
 void psx_init(PsxState *psx);
