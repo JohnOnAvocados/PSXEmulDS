@@ -172,7 +172,7 @@ typedef struct {
     PsxTimer timers[3];
     PsxTestResult test_result;
     bool test_mode;
-    struct PsxGpuState *gpu;
+struct PsxGpuState *gpu;
     struct PsxDmaState *dma;
     struct PsxCdromState *cdrom;
     uint32_t vblank_counter;
@@ -183,6 +183,9 @@ typedef struct {
     int write_queue_head;
     int write_queue_tail;
     int write_queue_count;
+    
+    // BIOS subsystem
+    struct PsxBiosState *bios_state;
 } PsxState;
 
 void psx_init(PsxState *psx);
