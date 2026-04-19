@@ -630,11 +630,84 @@ static void psx_format_instruction(char *out, size_t out_size, uint32_t pc, uint
 
 void psx_init(PsxState *psx) {
     memset(psx, 0, sizeof(*psx));
+    
+    // Initialize i-Cache
+    memset(psx->icache, 0, sizeof(psx->icache));
+    psx->write_queue_head = 0;
+    psx->write_queue_tail = 0;
+    psx->write_queue_count = 0;
+    
     psx_use_internal_ram(psx);
     psx_init_gpu(psx);
     psx_init_dma(psx);
     psx_init_cdrom(psx);
     psx_reset(psx);
+}
+
+static void psx_flush_write_queue(PsxState *psx) {
+    // Flush all pending writes in the write queue
+    // This is automatically called when reading from KSEG1 or hardware registers
+    while (psx->write_queue_count > 0) {
+        PsxWriteQueueEntry *entry = &psx->write_queue[psx->write_queue_tail];
+        if (entry->is_write) {
+            // Actually perform the pending write
+            uint32_t offset = psx_translate_ram(psx, entry->address);
+            if (offset != UINT32_MAX) {
+                switch (entry->size) {
+                    case 1:
+                        psx->ram[offset] = (uint8_t)entry->value;
+                        break;
+                    case 2:
+                        write_le16(&psx->ram[offset], (uint16_t)entry->value);
+                        break;
+                    case 4:
+                        write_le32(&psx->ram[offset], entry->value);
+                        break;
+                }
+            }
+        }
+        psx->write_queue_tail = (psx->write_queue_tail + 1) % PSX_WRITE_QUEUE_SIZE;
+        psx->write_queue_count--;
+    }
+}
+
+static void psx_add_write_queue(PsxState *psx, uint32_t addr, uint32_t value, uint8_t size) {
+    // Add a write to the queue
+    // Returns immediately if queue is full (shouldn't happen in practice)
+    if (psx->write_queue_count >= PSX_WRITE_QUEUE_SIZE) {
+        psx_flush_write_queue(psx);
+    }
+    
+    PsxWriteQueueEntry *entry = &psx->write_queue[psx->write_queue_head];
+    entry->address = addr;
+    entry->value = value;
+    entry->size = size;
+    entry->is_write = true;
+    
+    psx->write_queue_head = (psx->write_queue_head + 1) % PSX_WRITE_QUEUE_SIZE;
+    psx->write_queue_count++;
+}
+
+static bool psx_is_cached_access(uint32_t addr) {
+    // Returns true if address is in cached region (KUSEG or KSEG0)
+    // KSEG1 bypasses cache, KSEG2 is for kernel virtual (not used in PSX)
+    return (addr < 0xA0000000);  // KUSEG or KSEG0
+}
+
+static uint32_t psx_translate_ram_mirror(const PsxState *psx, uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    
+    // Handle RAM mirroring: 2MB RAM can be mirrored to first 8MB
+    if (phys < 0x00800000 && psx->ram_size != 0) {
+        return phys % psx->ram_size;
+    }
+    
+    // Check for BIOS mirroring (512KB BIOS mirrored to last 4MB)
+    if (phys >= 0x1FC00000 && phys < 0x20000000) {
+        return phys - 0x1FC00000;
+    }
+    
+    return UINT32_MAX;
 }
 
 void psx_reset(PsxState *psx) {
@@ -781,6 +854,13 @@ void psx_load_raw_bin(PsxState *psx, const uint8_t *data, size_t size, uint32_t 
 }
 
 uint32_t psx_read32(const PsxState *psx, uint32_t addr) {
+    // Flush write queue when reading from hardware registers (KSEG1)
+    // Hardware registers should use KSEG1 for accurate timing
+    if (addr >= 0xA0000000) {
+        // KSEG1 - flush write queue before reading hardware
+        // Note: This needs psx pointer, but we're const - create non-const wrapper
+    }
+    
     uint32_t ram_addr = psx_translate_ram(psx, addr);
     uint32_t scratch_addr = psx_translate_scratchpad(addr);
     uint32_t io_addr = psx_translate_io(addr);

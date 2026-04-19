@@ -1,6 +1,7 @@
 #ifndef PSX_CDROM_H
 #define PSX_CDROM_H
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 
