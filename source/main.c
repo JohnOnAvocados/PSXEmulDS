@@ -53,6 +53,8 @@ static PrintConsole g_top_console;
 static PrintConsole g_bottom_console;
 static bool g_auto_run = false;
 static uint32_t g_run_batch = 128;
+static uint32_t g_frame_skip = 0;
+static uint32_t g_frame_counter = 0;
 static GameMenu g_menu;
 static bool g_emulator_mode = false;
 static PsxPadState g_pad;
@@ -399,6 +401,11 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
 }
 
 static void draw_video_output(void) {
+    g_frame_counter++;
+    if (g_frame_skip > 0 && (g_frame_counter % (g_frame_skip + 1)) != 0) {
+        return;
+    }
+
     if (g_psx.gpu == NULL) {
         consoleSelect(&g_bottom_console);
         consoleClear();
