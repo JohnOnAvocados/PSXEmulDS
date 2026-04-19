@@ -1,3 +1,4 @@
+#include "psx.h"
 #include "psx_dma.h"
 
 #include <stdio.h>
@@ -164,6 +165,7 @@ void dma_write32(PsxDmaState *dma, uint32_t addr, uint32_t value) {
 }
 
 void dma_update(PsxDmaState *dma, uint32_t cycles) {
+    (void)cycles;
     for (int i = 0; i < PSX_DMA_CHANNEL_COUNT; i++) {
         if (dma->channels[i].busy) {
             dma->channels[i].busy = false;

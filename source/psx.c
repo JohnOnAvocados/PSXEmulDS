@@ -2,22 +2,22 @@
 #include "psx_gpu.h"
 #include "psx_dma.h"
 #include "psx_cdrom.h"
+#include "psx_gte.h"
+#include "psx_sio.h"
+#include "psx_memctrl.h"
+#include "psx_slot2.h"
 
 #include <stdio.h>
 #include <string.h>
 
-enum {
-    PSX_KSEG0_BASE = 0x80000000,
-    PSX_KSEG1_BASE = 0xA0000000,
-    PSX_RAM_MIRROR_SIZE = 0x00800000,
-    PSX_SCRATCHPAD_BASE = 0x1F800000,
-    PSX_IO_BASE = 0x1F801000,
-    PSX_BIOS_BASE = 0x1FC00000,
-};
+// Note: Memory constants are now defined in psx.h
 
 #define PSX_GPU_BASE_ADDR 0x1F801810
 #define PSX_CDROM_BASE_ADDR 0x1F801800
 #define PSX_DMA_BASE_ADDR 0x1F801080
+#define PSX_GTE_BASE_ADDR 0x1F801820
+#define PSX_SIO_BASE_ADDR 0x1F801050
+#define PSX_MEMCTRL_BASE_ADDR 0x1F801000
 
 static const char *const psx_reg_names[32] = {
     "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
@@ -26,55 +26,53 @@ static const char *const psx_reg_names[32] = {
     "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
 };
 
-static uint32_t psx_to_physical(uint32_t addr) {
-    if (addr >= PSX_KSEG1_BASE && addr < 0xC0000000) {
-        return addr - PSX_KSEG1_BASE;
+static inline uint32_t psx_to_physical(uint32_t addr) {
+    // Handle KSEG0 and KSEG1 (cached and uncached kernel spaces)
+    if (addr >= 0x80000000 && addr < 0xA0000000) { // KSEG0
+        return addr & 0x007FFFFF;
     }
-
-    if (addr >= PSX_KSEG0_BASE && addr < PSX_KSEG1_BASE) {
-        return addr - PSX_KSEG0_BASE;
+    if (addr >= 0xA0000000) { // KSEG1 and KSEG2
+        return addr & 0x007FFFFF;
     }
-
-    return addr;
+    // KUSEG (user space) - same physical mapping as KSEG0/KSEG1
+    return addr & 0x007FFFFF;
 }
 
-static uint32_t psx_translate_ram(const PsxState *psx, uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys < PSX_RAM_MIRROR_SIZE && psx->ram_size != 0) {
+static inline uint32_t psx_translate_ram(const PsxState *psx, uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    // Handle RAM mirroring: 2MB can mirror to first 8MB
+    // For simplicity, allow access to full 8MB region if RAM >= 2MB
+    if (phys < 0x00800000 && psx->ram_size >= 0x00200000) {
         return phys % (uint32_t)psx->ram_size;
     }
-
+    // Direct access without mirroring for smaller RAM
+    if (psx->ram_size > 0 && phys < (uint32_t)psx->ram_size) {
+        return phys;
+    }
     return UINT32_MAX;
 }
 
-static uint32_t psx_translate_scratchpad(uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys >= PSX_SCRATCHPAD_BASE && phys < PSX_SCRATCHPAD_BASE + PSX_SCRATCHPAD_SIZE) {
-        return phys - PSX_SCRATCHPAD_BASE;
+static inline uint32_t psx_translate_scratchpad(uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    if (phys >= 0x1F800000 && phys < 0x1F800000 + PSX_SCRATCHPAD_SIZE) {
+        return phys - 0x1F800000;
     }
-
     return UINT32_MAX;
 }
 
-static uint32_t psx_translate_io(uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys >= PSX_IO_BASE && phys < PSX_IO_BASE + PSX_IO_SIZE) {
-        return phys - PSX_IO_BASE;
+static inline uint32_t psx_translate_io(uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    if (phys >= 0x1F801000 && phys < 0x1F801000 + PSX_IO_SIZE) {
+        return phys - 0x1F801000;
     }
-
     return UINT32_MAX;
 }
 
-static uint32_t psx_translate_bios(uint32_t addr) {
-    uint32_t phys = psx_to_physical(addr);
-
-    if (phys >= PSX_BIOS_BASE && phys < PSX_BIOS_BASE + PSX_BIOS_SIZE) {
-        return phys - PSX_BIOS_BASE;
+static inline uint32_t psx_translate_bios(uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    if (phys >= 0x1FC00000 && phys < 0x1FC00000 + PSX_BIOS_SIZE) {
+        return phys - 0x1FC00000;
     }
-
     return UINT32_MAX;
 }
 
@@ -97,14 +95,67 @@ static void psx_halt(PsxState *psx, uint32_t pc, const char *reason) {
 
 void psx_trigger_irq(PsxState *psx, uint16_t irq_mask) {
     psx->pending_irqs |= irq_mask;
-    psx->cpu.cop0[13] |= 0x00000400;
+    // Set the hardware interrupt pending bit in COP0 Cause register
+    psx->cpu.cop0[13] |= (irq_mask << 8) | PSX_COP0_CAUSE_IP;
 }
 
 void psx_acknowledge_irq(PsxState *psx, uint16_t irq_mask) {
     psx->pending_irqs &= ~irq_mask;
     if (psx->pending_irqs == 0) {
-        psx->cpu.cop0[13] &= ~0x00000400;
+        // Clear all hardware interrupt pending bits except SW
+        psx->cpu.cop0[13] &= ~PSX_COP0_CAUSE_IP;
     }
+}
+
+// Exception handling
+static void psx_raise_exception(PsxState *psx, uint32_t exc_code, uint32_t addr) {
+    // Save EPC (checking for delay slot)
+    psx->cpu.cop0[14] = psx->cpu.pc;  // EPC
+    if (psx->cpu.in_delay_slot) {
+        psx->cpu.cop0[14] = psx->cpu.delay_slot;
+        psx->cpu.cop0[13] |= PSX_COP0_CAUSE_BD;  // Set BD bit
+    }
+    
+    // Set exception code in Cause register
+    psx->cpu.cop0[13] = (psx->cpu.cop0[13] & ~PSX_COP0_CAUSE_EXC) | (exc_code << 2);
+    
+    // Set BadVAddr if memory exception
+    if (exc_code == PSX_EXC_ADEL || exc_code == PSX_EXC_ADES) {
+        psx->cpu.cop0[8] = addr;  // BadVAddr
+    }
+    
+    // Set EXL bit in Status to force kernel mode
+    psx->cpu.cop0[12] |= PSX_COP0_SR_EXL;
+    
+    // Jump to exception vector (0x80000080)
+    psx->cpu.pc = 0x80000080;
+    psx->cpu.next_pc = psx->cpu.pc + 4;
+    psx->cpu.in_delay_slot = false;
+}
+
+// Check for unmapped memory access
+static bool psx_check_memory_error(PsxState *psx, uint32_t addr, bool is_write) {
+    uint32_t phys = addr & 0x007FFFFF;
+    
+    // Unused memory regions cause bus error
+    if (phys >= 0x00800000 && phys < 0x1F800000) {
+        // Expansion region - check if nothing mapped
+        return true;
+    }
+    if (phys >= 0x1F800400 && phys < 0x1F801000) {
+        // Gap between scratchpad and I/O
+        return true;
+    }
+    if (phys >= 0x1F802000 && phys < 0x1FA00000) {
+        // Gap in expansion region 2
+        return true;
+    }
+    if (phys >= 0x1FA00000 && phys < 0x1FC00000) {
+        // Expansion region 3 - only used for DTL cards
+        return true;
+    }
+    
+    return false;
 }
 
 bool psx_check_irq_pending(const PsxState *psx) {
@@ -355,6 +406,16 @@ void psx_use_internal_ram(PsxState *psx) {
     psx->ram = psx->ram_internal;
     psx->ram_size = PSX_RAM_SIZE;
     strncpy(psx->ram_backend_name, "internal", sizeof(psx->ram_backend_name) - 1);
+    psx->ram_backend_name[sizeof(psx->ram_backend_name) - 1] = '\0';
+}
+
+void psx_use_slot2_ram(PsxState *psx, uint8_t *slot2_buffer, size_t slot2_size) {
+    if (psx == NULL || slot2_buffer == NULL || slot2_size < PSX_RAM_SIZE) {
+        return;
+    }
+    psx->ram = slot2_buffer;
+    psx->ram_size = PSX_RAM_SIZE;
+    strncpy(psx->ram_backend_name, "SuperChis", sizeof(psx->ram_backend_name) - 1);
     psx->ram_backend_name[sizeof(psx->ram_backend_name) - 1] = '\0';
 }
 
@@ -627,11 +688,143 @@ static void psx_format_instruction(char *out, size_t out_size, uint32_t pc, uint
 
 void psx_init(PsxState *psx) {
     memset(psx, 0, sizeof(*psx));
+    
+    // Initialize i-Cache
+    memset(psx->icache, 0, sizeof(psx->icache));
+    psx->write_queue_head = 0;
+    psx->write_queue_tail = 0;
+    psx->write_queue_count = 0;
+    
     psx_use_internal_ram(psx);
     psx_init_gpu(psx);
     psx_init_dma(psx);
     psx_init_cdrom(psx);
+    psx_init_gte(psx);
+    psx_init_sio(psx);
+    psx_init_memctrl(psx);
     psx_reset(psx);
+}
+
+static void psx_flush_write_queue(PsxState *psx) {
+    // Flush all pending writes in the write queue
+    // This is automatically called when reading from KSEG1 or hardware registers
+    while (psx->write_queue_count > 0) {
+        PsxWriteQueueEntry *entry = &psx->write_queue[psx->write_queue_tail];
+        if (entry->is_write) {
+            // Actually perform the pending write
+            uint32_t offset = psx_translate_ram(psx, entry->address);
+            if (offset != UINT32_MAX) {
+                switch (entry->size) {
+                    case 1:
+                        psx->ram[offset] = (uint8_t)entry->value;
+                        break;
+                    case 2:
+                        write_le16(&psx->ram[offset], (uint16_t)entry->value);
+                        break;
+                    case 4:
+                        write_le32(&psx->ram[offset], entry->value);
+                        break;
+                }
+            }
+        }
+        psx->write_queue_tail = (psx->write_queue_tail + 1) % PSX_WRITE_QUEUE_SIZE;
+        psx->write_queue_count--;
+    }
+}
+
+static void psx_add_write_queue(PsxState *psx, uint32_t addr, uint32_t value, uint8_t size) {
+    // Add a write to the queue
+    // Returns immediately if queue is full (shouldn't happen in practice)
+    if (psx->write_queue_count >= PSX_WRITE_QUEUE_SIZE) {
+        psx_flush_write_queue(psx);
+    }
+    
+    PsxWriteQueueEntry *entry = &psx->write_queue[psx->write_queue_head];
+    entry->address = addr;
+    entry->value = value;
+    entry->size = size;
+    entry->is_write = true;
+    
+    psx->write_queue_head = (psx->write_queue_head + 1) % PSX_WRITE_QUEUE_SIZE;
+    psx->write_queue_count++;
+}
+
+static bool psx_is_cached_access(uint32_t addr) {
+    // Returns true if address is in cached region (KUSEG or KSEG0)
+    // KSEG1 bypasses cache, KSEG2 is for kernel virtual (not used in PSX)
+    return (addr < 0xA0000000);  // KUSEG or KSEG0
+}
+
+static uint32_t psx_icache_get_index(uint32_t phys_addr) {
+    // i-Cache is direct-mapped: index = bits[11:4] of physical address
+    return (phys_addr >> 4) & 0xFF;
+}
+
+static uint32_t psx_icache_get_tag(uint32_t phys_addr) {
+    // Tag is physical address[31:12]
+    return phys_addr >> 12;
+}
+
+static uint32_t psx_icache_lookup(PsxState *psx, uint32_t phys_addr) {
+    if (!psx_is_cached_access(phys_addr)) {
+        return 0;
+    }
+    
+    uint32_t index = psx_icache_get_index(phys_addr);
+    uint32_t tag = psx_icache_get_tag(phys_addr);
+    PsxICacheLine *line = &psx->icache[index];
+    
+    if (line->tag == tag && line->valid) {
+        uint32_t offset = phys_addr & 0xF;
+        return read_le32(&line->data[offset]);
+    }
+    
+    return 0;
+}
+
+static void psx_icache_fill(PsxState *psx, uint32_t phys_addr) {
+    if (!psx_is_cached_access(phys_addr)) {
+        return;
+    }
+    
+    uint32_t index = psx_icache_get_index(phys_addr);
+    uint32_t tag = psx_icache_get_tag(phys_addr);
+    PsxICacheLine *line = &psx->icache[index];
+    
+    memcpy(line->data, &psx->ram[phys_addr & 0x7FFFF0], PSX_ICACHE_LINE_SIZE);
+    line->tag = tag;
+    line->valid = 1;
+}
+
+static uint32_t psx_fetch_instruction(PsxState *psx, uint32_t addr) {
+    uint32_t phys_addr = psx_to_physical(addr);
+    uint32_t opcode = psx_icache_lookup(psx, phys_addr);
+    
+    if (opcode == 0) {
+        opcode = psx_read32(psx, addr);
+        if (psx_is_cached_access(addr)) {
+            psx_icache_fill(psx, phys_addr);
+            opcode = psx_icache_lookup(psx, phys_addr);
+        }
+    }
+    
+    return opcode;
+}
+
+static uint32_t psx_translate_ram_mirror(const PsxState *psx, uint32_t addr) {
+    uint32_t phys = addr & 0x007FFFFF;
+    
+    // Handle RAM mirroring: 2MB RAM can be mirrored to first 8MB
+    if (phys < 0x00800000 && psx->ram_size != 0) {
+        return phys % psx->ram_size;
+    }
+    
+    // Check for BIOS mirroring (512KB BIOS mirrored to last 4MB)
+    if (phys >= 0x1FC00000 && phys < 0x20000000) {
+        return phys - 0x1FC00000;
+    }
+    
+    return UINT32_MAX;
 }
 
 void psx_reset(PsxState *psx) {
@@ -705,11 +898,13 @@ void psx_load_demo(PsxState *psx) {
 }
 
 bool psx_load_bios(PsxState *psx, const uint8_t *data, size_t size) {
-    if (data == NULL || size != PSX_BIOS_SIZE) {
+    if (data == NULL || size < 128 * 1024 || size > PSX_BIOS_SIZE * 2) {
         return false;
     }
 
-    memcpy(psx->bios, data, PSX_BIOS_SIZE);
+    size_t copy_size = size;
+    if (copy_size > PSX_BIOS_SIZE) copy_size = PSX_BIOS_SIZE;
+    memcpy(psx->bios, data, copy_size);
     psx->bios_loaded = true;
     strncpy(psx->halt_reason, "bios loaded", sizeof(psx->halt_reason) - 1);
     psx->halt_reason[sizeof(psx->halt_reason) - 1] = '\0';
@@ -775,7 +970,15 @@ void psx_load_raw_bin(PsxState *psx, const uint8_t *data, size_t size, uint32_t 
     psx->last_io_write = false;
 }
 
-uint32_t psx_read32(const PsxState *psx, uint32_t addr) {
+static void psx_flush_write_queue_on_access(PsxState *psx, uint32_t addr) {
+    if (addr >= 0xA0000000 && psx->write_queue_count > 0) {
+        psx_flush_write_queue(psx);
+    }
+}
+
+uint32_t psx_read32(PsxState *psx, uint32_t addr) {
+    psx_flush_write_queue_on_access(psx, addr);
+    
     uint32_t ram_addr = psx_translate_ram(psx, addr);
     uint32_t scratch_addr = psx_translate_scratchpad(addr);
     uint32_t io_addr = psx_translate_io(addr);
@@ -810,6 +1013,27 @@ uint32_t psx_read32(const PsxState *psx, uint32_t addr) {
         return 0;
     }
 
+    if (addr >= PSX_GTE_BASE_ADDR && addr < PSX_GTE_BASE_ADDR + 0x100) {
+        if (psx->gte) {
+            return gte_read32(psx->gte, addr);
+        }
+        return 0;
+    }
+
+    if (addr >= PSX_SIO_BASE_ADDR && addr < PSX_SIO_BASE_ADDR + 0x10) {
+        if (psx->sio) {
+            return sio_read32(psx->sio, addr);
+        }
+        return 0;
+    }
+
+    if (addr >= PSX_MEMCTRL_BASE_ADDR && addr < PSX_MEMCTRL_BASE_ADDR + 0x40) {
+        if (psx->memctrl) {
+            return memctrl_read32(psx->memctrl, addr);
+        }
+        return 0;
+    }
+
     if (bios_addr != UINT32_MAX && bios_addr + 3 < PSX_BIOS_SIZE) {
         return read_le32(&psx->bios[bios_addr]);
     }
@@ -818,6 +1042,8 @@ uint32_t psx_read32(const PsxState *psx, uint32_t addr) {
 }
 
 void psx_write32(PsxState *psx, uint32_t addr, uint32_t value) {
+    psx_flush_write_queue_on_access(psx, addr);
+    
     uint32_t ram_addr = psx_translate_ram(psx, addr);
     uint32_t scratch_addr = psx_translate_scratchpad(addr);
     uint32_t io_addr = psx_translate_io(addr);
@@ -851,6 +1077,27 @@ void psx_write32(PsxState *psx, uint32_t addr, uint32_t value) {
     if (addr >= PSX_CDROM_BASE_ADDR && addr < PSX_CDROM_BASE_ADDR + 0x80) {
         if (psx->cdrom) {
             cdrom_write8(psx->cdrom, addr, value);
+        }
+        return;
+    }
+
+    if (addr >= PSX_GTE_BASE_ADDR && addr < PSX_GTE_BASE_ADDR + 0x100) {
+        if (psx->gte) {
+            gte_write32(psx->gte, addr, value);
+        }
+        return;
+    }
+
+    if (addr >= PSX_SIO_BASE_ADDR && addr < PSX_SIO_BASE_ADDR + 0x10) {
+        if (psx->sio) {
+            sio_write32(psx->sio, addr, value);
+        }
+        return;
+    }
+
+    if (addr >= PSX_MEMCTRL_BASE_ADDR && addr < PSX_MEMCTRL_BASE_ADDR + 0x40) {
+        if (psx->memctrl) {
+            memctrl_write32(psx->memctrl, addr, value);
         }
         return;
     }
@@ -896,10 +1143,16 @@ static void psx_execute_special(PsxState *psx, uint32_t opcode, uint32_t *branch
         psx->cpu.hi = psx->cpu.gpr[rs];
         break;
     case 0x0C:
-        psx_halt(psx, psx->cpu.pc, "syscall");
+        // Syscall - increment PC and return (BIOS will handle the call)
+        psx->cpu.next_pc = psx->cpu.pc + 4;
+        psx->cpu.pc = psx->cpu.next_pc;
+        // Don't halt - let BIOS handle syscall
         break;
     case 0x0D:
-        psx_halt(psx, psx->cpu.pc, "break");
+        // Break - increment PC and return (debug handler will process)
+        psx->cpu.next_pc = psx->cpu.pc + 4;
+        psx->cpu.pc = psx->cpu.next_pc;
+        // Don't halt - let debug handler process break
         break;
     case 0x0F:
         psx->cpu.gpr[rd] = psx->cpu.hi;
@@ -1088,7 +1341,26 @@ void psx_step(PsxState *psx) {
         return;
     }
 
-    opcode = psx_read32(psx, current_pc);
+    // Check for unaligned memory access
+    if (current_pc & 3) {
+        psx_raise_exception(psx, PSX_EXC_ADEL, current_pc);
+        return;
+    }
+    
+    // Check for scratchpad execution (should cause bus error)
+    uint32_t scratch_addr = psx_translate_scratchpad(current_pc);
+    if (scratch_addr != UINT32_MAX) {
+        psx_raise_exception(psx, PSX_EXC_IBE, current_pc);  // Instruction bus error
+        return;
+    }
+    
+    // Check for memory errors in the address
+    if (psx_check_memory_error(psx, current_pc, false)) {
+        psx_raise_exception(psx, PSX_EXC_IBE, current_pc);
+        return;
+    }
+    
+    opcode = psx_fetch_instruction(psx, current_pc);
     psx->last_pc = current_pc;
     psx->last_opcode = opcode;
     psx_format_instruction(psx->last_disasm, sizeof(psx->last_disasm), current_pc, opcode);
@@ -1317,6 +1589,24 @@ void psx_init_dma(PsxState *psx) {
 void psx_init_cdrom(PsxState *psx) {
     memset(&g_cdrom, 0, sizeof(g_cdrom));
     psx->cdrom = &g_cdrom;
+}
+
+static PsxGteState g_gte;
+void psx_init_gte(PsxState *psx) {
+    memset(&g_gte, 0, sizeof(g_gte));
+    psx->gte = &g_gte;
+}
+
+static PsxSioState g_sio;
+void psx_init_sio(PsxState *psx) {
+    memset(&g_sio, 0, sizeof(g_sio));
+    psx->sio = &g_sio;
+}
+
+static PsxMemCtrlState g_memctrl;
+void psx_init_memctrl(PsxState *psx) {
+    memset(&g_memctrl, 0, sizeof(g_memctrl));
+    psx->memctrl = &g_memctrl;
 }
 
 void psx_update_peripherals(PsxState *psx, uint32_t cycles) {

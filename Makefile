@@ -11,7 +11,7 @@ include $(DEVKITARM)/ds_rules
 #---------------------------------------------------------------------------------
 # Target and source layout
 #---------------------------------------------------------------------------------
-TARGET		:=	psxnds
+TARGET		:=	PSXEmulDS
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data

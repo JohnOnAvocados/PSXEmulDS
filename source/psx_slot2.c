@@ -2,6 +2,14 @@
 
 #include <nds.h>
 #include <string.h>
+#include <stdio.h>
+
+#define SUPERCHIS_DETECT_ADDR    ((volatile uint16_t*)0x08000000)
+#define SUPERCHIS_SDRAM_ADDR    ((volatile uint16_t*)0x08000000)
+#define SUPERCHIS_MODE_REG    ((volatile uint16_t*)0x09FFFFFE)
+
+#define SUPERCHIS_MODE_RAM     0x0005
+#define SUPERCHIS_MODE_MEDIA  0x0003
 
 static Slot2Device g_slot2;
 
@@ -11,6 +19,9 @@ void slot2_init(void) {
     g_slot2.buffer = NULL;
     g_slot2.size = 0;
     g_slot2.initialized = false;
+    g_slot2.sdram_base = 0x08000000;
+    g_slot2.fram_base = 0x0A000000;
+    g_slot2.nor_base = 0x08000000;
 }
 
 void slot2_deinit(void) {
@@ -29,32 +40,13 @@ bool slot2_detect(void) {
     if (g_slot2.initialized) {
         return g_slot2.type != SLOT2_NONE;
     }
-    
+
     g_slot2.initialized = true;
-    
-    volatile uint16_t *slot2_reg = (volatile uint16_t*)0x0A000000;
-    uint16_t test_val = 0x1234;
-    *slot2_reg = test_val;
-    uint16_t readback = *slot2_reg;
-    
-    if (readback == test_val) {
-        g_slot2.type = SLOT2_SUPERCARD;
-        g_slot2.size = 16 * 1024 * 1024;
-        g_slot2.writable = true;
-        strncpy(g_slot2.name, "SuperCard Slot-2", sizeof(g_slot2.name) - 1);
-        g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
-        
-        g_slot2.buffer = (uint8_t*)malloc(g_slot2.size);
-        if (g_slot2.buffer != NULL) {
-            memset(g_slot2.buffer, 0, g_slot2.size);
-            return true;
-        }
-    }
-    
     g_slot2.type = SLOT2_NONE;
     g_slot2.size = 0;
-    strncpy(g_slot2.name, "None", sizeof(g_slot2.name) - 1);
+    strncpy(g_slot2.name, "Disabled (debug)", sizeof(g_slot2.name) - 1);
     g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
+    iprintf("slot2: detection disabled\n");
     return false;
 }
 

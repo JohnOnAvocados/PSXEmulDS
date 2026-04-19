@@ -1,155 +1,147 @@
-# psxnds Implementation Plan
+# PSXEmulDS Implementation Plan
 
-## Executive Summary
+PlayStation 1 emulator for Nintendo DS - consolidated implementation roadmap.
 
-The emulator has a **functional CPU and basic memory system**, but lacks several critical features for actual game playback. Below is a prioritized roadmap.
+## Current Status (Alpha)
 
----
+The emulator has a functional CPU core and memory system, plus all major PS1 subsystems implemented:
+- CPU, Memory, BIOS, Interrupts, Timers - COMPLETE
+- GPU, CD-ROM, DMA - COMPLETE
+- GTE, SIO, PAD, MDEC - COMPLETE
+- Sound (SPU) - STUB (silence only)
 
-## Phase A: Critical Fixes (Completed)
+## Completed Phases
 
-### A2: GPU Completion
+### Phase 1-3: Core System
+- MIPS R3000A CPU (~95% coverage)
+- Memory system (1MB RAM, 512KB BIOS)
+- Interrupt system, timers
+- BIOS stubs
 
-**Status:** ✅ COMPLETED
+### Phase 4-6: Storage & Graphics
+- CD-ROM controller
+- DMA controller
+- GPU with VRAM
 
-| Implementation | Description |
-|---------------|-------------|
-| `gpu_fill_triangle()` | Filled polygon rendering using scanline algorithm |
-| `gpu_fill_line()` | Filled line rendering |
-| VRAM → VRAM DMA | GP0 0x40-0x4F transfers |
-| CPU → VRAM DMA | GP0 0xA0 transfers |
+### Phase 7-8: Peripherals
+- Controller (PAD) polling
+- Memory card support
+- MDEC video decoder
 
-### B1: CD-ROM Completion
+### Phase 9: GTE & System
+- Geometry Transformation Engine
+- Serial Interface (SIO)
+- Memory Control registers
 
-**Status:** ✅ COMPLETED
+## Next Phases (Priority Order)
 
-| Implementation | Description |
-|---------------|-------------|
-| PAUSE command | Complete with response sequence |
-| INIT command | With track info return |
-| CUE parsing | Multi-track disc support |
-| Track LBA | Track position array |
+### Phase 10: Sound (SPU) - HIGH PRIORITY
+| Component | Implementation | Priority |
+|-----------|---------------|-----------|
+| ADPCM decoder | 24-channel ADPCM | High |
+| ADSR envelopes | Attack/Decay/Sustain/Release | High |
+| Modular design | Can compile out when disabled | HIGH |
 
-### B2: DMA Completion
+**Design**: Compile-time option to disable for performance
 
-**Status:** ✅ COMPLETED
+### Phase 11: Display Output - HIGH PRIORITY
+| Component | Target |
+|-----------|--------|
+| Resolution | 192x192 (DS screen optimized) |
+| Frame copy | Optimized VRAM→DS |
+| V-blank | Sync |
+| Interlace | Field toggling |
 
-| Implementation | Description |
-|---------------|-------------|
-| DMA channels | 0-3 channel support |
-| Callbacks | GPU, CDROM, SPU callbacks |
-| Interrupt handling | Completion detection |
+### Phase 12: Controller Input - HIGH PRIORITY
+| Component | Implementation |
+|-----------|------------|
+| PAD polling | Serial read every frame |
+| Button map | DS → PS1 mapping |
+| Analog | DualShock ready |
 
----
+### Phase 13: Game Loading - MEDIUM
+| Component | Implementation |
+|-----------|------------|
+| CUE parser | Track LBA mapping |
+| ISO9660 | Sector reading |
+| Multi-bin | File switching |
 
-## Phase B: CD-ROM and DMA (Completed)
+### Phase 14: Memory Expansion - MEDIUM
+| Component | Implementation |
+|-----------|------------|
+| Slot-2 RAM | 2MB PS1 RAM |
+| Banking | 2MB→32MB mapping |
 
-### B1: Complete CD-ROM Command Handling
+## Architecture Notes
 
-**Status:** ✅ DONE
+### Memory Budget (DS 3.5MB ARM9 limit)
+| Component | Size |
+|-----------|------|
+| PS1 RAM | 1 MB |
+| PS1 BIOS | 512 KB |
+| GPU VRAM | 256×256 |
+| Scratchpad | 1 KB |
+| I/O | 4 KB |
+| **Total Static** | ~1.65 MB |
 
-| Command | Function | Status |
-|---------|----------|---------|
-| 0x02 | SETLOC (set read position) | ✅ Done |
-| 0x06 | READN (start reading) | ✅ Done |
-| 0x08 | STOP | ✅ Done |
-| 0x09 | PAUSE | ✅ Done |
-| 0x0A | INIT | ✅ Done |
-| 0x0D | GETVOL | ✅ Partial |
-| 0x0E | SETVOL | ✅ Partial |
+### Display Configuration
+- Target: 192×192 (fits DS screen)
+- PS1 original: 256×240
+- Scale: 0.75x with letterboxing
 
-### B2: Functional DMA Transfers
+### Performance Targets
+- PS1 CPU: 33.8688 MHz MIPS R3000A
+- DS ARM9: 67 MHz
+- Expected: 2-5 FPS (simple games), <1 FPS (complex)
 
-**Status:** ✅ DONE
+## Controls (In-Emulator)
 
-| Channel | Use | Status |
-|--------|-----|----------|
-| DMA 0 | CD-ROM to RAM | ✅ Working |
-| DMA 1 | GPU to RAM | ✅ Working |
-| DMA 2 | RAM to GPU | ✅ Working |
-| DMA 3 | SPU/Memory | ✅ Working |
+| Button | Action |
+|--------|--------|
+| A | Execute 1 instruction |
+| B | Execute current batch |
+| Y | Execute 8 batches |
+| X | Toggle auto-run |
+| L | Halve batch size |
+| R | Double batch size |
+| START | Reload/reboot |
+| SELECT | Toggle test mode |
 
----
+## File Loading (Priority)
 
-## Phase C: Memory Expansion (Future)
+1. `/psx/boot.exe` or `/PSX/BOOT.EXE`
+2. `/psx/demo.bin` (raw at 0x10000)
+3. `/psx/scph1001.bin` (BIOS boot)
+4. Built-in demo
 
-### C1: SuperChis Prime RAM Access
+## Build
 
-**Technical Requirements:**
-
-```
-SuperChis Prime Specs:
-- 32MB SDRAM (0x0C000000-0x0FFFFFFF region)
-- 128KB FRAM (save games)
-- 128MB NOR Flash (cartridge ROM)
-
-Access Method:
-- Detect via memory probe at known addresses
-- Map SDRAM to ARM9 accessible region
-- Create shared memory interface for PS1 RAM
-```
-
-| Task | Description | Complexity |
-|------|-------------|------------|
-| C1.1 | SuperChis detection routine | Medium |
-| C1.2 | SDRAM initialization and testing | Medium |
-| C1.3 | PS1 memory region mapping (0x00000000-0x007FFFFF) | High |
-| C1.4 | Memory banking for >2MB access | High |
-
----
-
-## Phase D: BIOS and System Calls
-
-### D1: Complete BIOS Function Stubs
-
-**Status:** Done (most common calls)
-
-| Function | Address | Status |
-|---------|---------|----------|
-| Open | 0xA0 | ⚠️ Stub |
-| Close | 0xA0 | ⚠️ Stub |
-| Read | 0xA0 | ⚠️ Stub |
-| Seek | 0xA0 | ⚠️ Stub |
-| CdSeekL | 0xB0 | ✅ Working |
-| CdRead | 0xB0 | ✅ Working |
-
----
-
-## Phase E: Performance Optimization
-
-### E1: Execution Speed
-
-| Optimization | Description | Expected Gain |
-|-------------|-------------|---------------|
-| Batch instruction execution | Increase default batch size | 2-3x |
-| Cached memory translation | Avoid address calculation per access | 10-20% |
-| GPU render batching | Skip unchanged frames | Variable |
-
----
-
-## Recommended Implementation Order
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ COMPLETED:                                         │
-│  A2 - GPU filled polygon rendering                    │
-│  B1 - CD-ROM command completion                       │
-│  B2 - DMA transfer implementation                 │
-│  CUE - CUE sheet parsing                          │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ FUTURE:                                           │
-│  C1 - SuperChis RAM (restore full 2MB PS1 RAM)          │
-│  E1 - Performance optimizations                  │
-│  F1 - Sound implementation                       │
-└─────────────────────────────────────────────────────────────┘
+```powershell
+make
 ```
 
+Produces `PSXEmulDS.nds`.
+
+## Technical References
+
+- psx-spx.consoledev.net - Full PS1 hardware specs
+- devkitPro / libnds - DS homebrew SDK
+- libfat - SD card access
+
+## Known Limitations
+
+- Sound: Stub only (no audio output)
+- Display: Basic VRAM copy
+- Controller: Not yet mapped to DS input
+- Memory: 1MB (2MB via Slot-2)
+
+## Future Development
+
+1. Sound implementation (Phase 10)
+2. Display optimization (Phase 11)
+3. Controller integration (Phase 12)
+4. Game loading (Phase 13)
+5. Memory expansion (Phase 14)
+
 ---
-
-## Notes
-
-- PS1 RAM currently 1MB (reduced from 2MB due to DS memory limits)
-- GPU VRAM is 256x256 (reduced from 512x256)
-- SuperChis Prime 32MB RAM could restore full 2MB PS1 RAM
+Last Updated: 2026-04-19

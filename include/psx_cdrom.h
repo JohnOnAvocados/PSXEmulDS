@@ -1,9 +1,9 @@
 #ifndef PSX_CDROM_H
 #define PSX_CDROM_H
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #define PSX_CDROM_REG_INDEX        0x00
 #define PSX_CDROM_REG_RESPONSE     0x01

@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdbool.h>
+#include <stdint.h>
 #include <fat.h>
 
 #include "psx.h"
@@ -11,6 +12,7 @@
 #include "psx_cdrom.h"
 #include "psx_menu.h"
 #include "psx_gpu.h"
+#include "psx_debug.h"
 
 typedef struct {
     bool fat_ready;
@@ -72,7 +74,7 @@ static void draw_trace(const PsxState *psx) {
 static void draw_startup_message(const char *message) {
     consoleSelect(&g_top_console);
     consoleClear();
-    iprintf("psxnds\n\n");
+    iprintf("PSXEmulDS\n\n");
     iprintf("Starting up...\n");
     iprintf("%s\n", message);
 
@@ -151,21 +153,7 @@ static void test_save_results(TestSuite *suite) {
     fclose(fp);
 }
 
-static void test_run_incremental(TestSuite *suite, uint32_t num_instructions) {
-    if (!g_psx.halted) {
-        psx_run(&g_psx, num_instructions);
-        
-        if (g_psx.halted) {
-            test_record_result(suite, suite->current_test + 1, false, 
-                             g_psx.test_result.error_code,
-                             g_psx.halt_reason);
-        } else {
-            test_record_result(suite, suite->current_test + 1, true, 0, "completed");
-        }
-    } else {
-        test_record_result(suite, suite->current_test + 1, false, 0xFFFF, "already halted");
-    }
-}
+/* Unused function removed */
 
 static bool read_file(const char *path, uint8_t **out_data, size_t *out_size) {
     FILE *fp;
@@ -235,13 +223,20 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
     };
     static const char *const raw_bin_path = "/psx/demo.bin";
     static const char *const bios_paths[] = {
+        "/psx/SCPH1001.BIN",
         "/psx/scph1001.bin",
+        "/psx/SCPH1000.BIN",
+        "/psx/scph1000.bin",
+        "/PSX/SCPH1001.BIN",
+        "/PSX/scph1001.bin",
+        "/PSX/SCPH1000.BIN",
+        "/PSX/scph1000.bin",
         "/psx/bios.bin",
     };
     size_t i;
 
-    draw_startup_message("Mounting FAT...");
-    boot->fat_ready = fatInitDefault();
+    draw_startup_message("Checking FAT...");
+    boot->fat_ready = g_boot.fat_ready; // Use FAT status from main()
     boot->bios_loaded = false;
     boot->exe_loaded = false;
     boot->bin_loaded = false;
@@ -252,23 +247,28 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
         return;
     }
 
-    draw_startup_message("Scanning BIOS...");
-    for (i = 0; i < sizeof(bios_paths) / sizeof(bios_paths[0]); i++) {
-        uint8_t *buffer = NULL;
-        size_t buffer_size = 0;
+     draw_startup_message("Scanning BIOS...");
+     for (i = 0; i < sizeof(bios_paths) / sizeof(bios_paths[0]); i++) {
+         uint8_t *buffer = NULL;
+         size_t buffer_size = 0;
 
-        if (!read_file(bios_paths[i], &buffer, &buffer_size)) {
-            continue;
-        }
+         debug_log("Trying BIOS path: %s", bios_paths[i]);
 
-        if (psx_load_bios(psx, buffer, buffer_size)) {
-            boot->bios_loaded = true;
-            free(buffer);
-            break;
-        }
+         if (!read_file(bios_paths[i], &buffer, &buffer_size)) {
+             debug_log("Failed to read BIOS file: %s", bios_paths[i]);
+             continue;
+         }
 
-        free(buffer);
-    }
+         if (psx_load_bios(psx, buffer, buffer_size)) {
+             boot->bios_loaded = true;
+             debug_log("BIOS loaded successfully from %s", bios_paths[i]);
+             free(buffer);
+             break;
+         }
+
+         debug_log("Failed to load BIOS from %s", bios_paths[i]);
+         free(buffer);
+     }
 
     draw_startup_message("Scanning PS-X EXE...");
     for (i = 0; i < sizeof(candidate_paths) / sizeof(candidate_paths[0]); i++) {
@@ -337,7 +337,7 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
     consoleSelect(&g_top_console);
     consoleClear();
 
-    iprintf("psxnds proof of concept\n");
+    iprintf("PSXEmulDS proof of concept\n");
     iprintf("A:1  B:%lu  X:auto  Y:x8\n", (unsigned long)g_run_batch);
     iprintf("L/R: batch  START: reload\n");
     iprintf("SELECT: test mode  L: save tests\n\n");
@@ -395,23 +395,44 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
 }
 
 static void draw_video_output(void) {
-    if (g_psx.gpu == NULL) return;
-    
+    if (g_psx.gpu == NULL) {
+        consoleSelect(&g_bottom_console);
+        consoleClear();
+        iprintf("GPU NOT INITIALIZED");
+        return;
+    }
+
     uint16_t *vram = g_psx.gpu->vram;
     uint16_t display_x = g_psx.gpu->display_x;
     uint16_t display_y = g_psx.gpu->display_y;
-    
-    uint16_t *top_screen = (uint16_t*)BG_GFX;
-    
+
+    uint16_t first_pixel = vram[0];
+    uint16_t mid_pixel = vram[PSX_GPU_VRAM_WIDTH * 100 + 128];
+    uint16_t last_pixel = vram[PSX_GPU_VRAM_WIDTH * PSX_GPU_VRAM_HEIGHT - 1];
+
+    int render_count = 0;
+    int first_nonzero = -1;
     for (int y = 0; y < 192; y++) {
         for (int x = 0; x < 256; x++) {
             int src_y = (display_y + y) % PSX_GPU_VRAM_HEIGHT;
             int src_x = (display_x + x) % PSX_GPU_VRAM_WIDTH;
             uint16_t pixel = vram[src_y * PSX_GPU_VRAM_WIDTH + src_x];
-            
-            top_screen[y * 256 + x] = pixel;
+            if (pixel != 0) {
+                render_count++;
+                if (first_nonzero < 0) first_nonzero = y * 256 + x;
+            }
+            uint16_t bg_x = x;
+            uint16_t bg_y = y;
+            (BG_GFX)[bg_y * 256 + bg_x] = pixel;
         }
     }
+
+    consoleSelect(&g_bottom_console);
+    consoleClear();
+    iprintf("VRAM DEBUG");
+    iprintf("first=%04x mid=%04x", (unsigned int)first_pixel, (unsigned int)mid_pixel);
+    iprintf("last=%04x nzero=%d", (unsigned int)last_pixel, first_nonzero);
+    iprintf("px=%d PC=%08lx", render_count, (unsigned long)g_psx.cpu.pc);
 }
 
 static void run_menu_mode(void) {
@@ -442,16 +463,16 @@ static void run_menu_mode(void) {
                 consoleClear();
                 iprintf("Loading: %s\n", selected);
                 consoleSelect(&g_bottom_console);
-                
-                cdrom_load_image(g_psx.cdrom, selected);
-                
+
                 psx_reset(&g_psx);
                 psx_boot_bios(&g_psx);
-                
-                videoSetMode(MODE_5_2D);
+
+                videoSetMode(MODE_0_2D);
                 vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
-                
+
                 g_emulator_mode = true;
+                g_auto_run = true;
+                g_run_batch = 1024;
                 return;
             }
         }
@@ -478,26 +499,102 @@ int main(void) {
     consoleInit(&g_top_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);
     consoleInit(&g_bottom_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
 
-    draw_startup_message("Video initialized. FAT init...");
+    consoleSelect(&g_bottom_console);
+    consoleClear();
+    iprintf("PSXEmulDS Debug\n");
+    iprintf("================\n");
+    iprintf("Testing FAT init...\n");
 
-    if (!fatInitDefault()) {
-        draw_startup_message("FAT init failed!");
-        while (1) swiWaitForVBlank();
+    g_boot.fat_ready = fatInitDefault();
+
+    iprintf("fatInitDefault: ret=%d\n", g_boot.fat_ready);
+
+    if (g_boot.fat_ready) {
+        FILE *test = fopen("test.txt", "w");
+        if (test) {
+            iprintf("fopen(w): OK\n");
+            fclose(test);
+            remove("test.txt");
+        } else {
+            iprintf("fopen(w): FAIL\n");
+        }
+    } else {
+        iprintf("DLDI may not be patched\n");
+        iprintf("by flashcard kernel\n");
     }
-    
+
+    debug_init();
+    debug_log("=== PSXEmulDS Boot ===");
+    debug_log("FAT result: %d", g_boot.fat_ready);
+
     psx_init(&g_psx);
-    g_boot.fat_ready = true;
-    g_boot.bios_loaded = psx_load_bios(&g_psx, NULL, 0);
-    
-    run_menu_mode();
-    
-    if (!g_emulator_mode) {
-        memset(&g_boot, 0, sizeof(g_boot));
-        g_auto_run = true;
-        g_run_batch = 512;
-        try_load_exe(&g_psx, &g_boot);
+    debug_log("PSX init done");
+
+    slot2_init();
+    slot2_detect();
+    Slot2Device *slot2 = slot2_get_device();
+
+    debug_log("Slot2: type=%d", slot2->type);
+
+    if (slot2->type == SLOT2_SUPERCHIS) {
+        debug_log("Using Slot-2 RAM");
+        psx_use_slot2_ram(&g_psx, slot2->buffer, slot2->size);
+    } else {
+        debug_log("Using internal RAM");
     }
-    
+
+    debug_log("Loading BIOS...");
+    g_boot.bios_loaded = false;
+    static const char *const bios_paths[] = {
+        "/psx/SCPH1001.BIN",
+        "/psx/scph1001.bin",
+        "/psx/SCPH1000.BIN",
+        "/psx/scph1000.bin",
+        "/PSX/SCPH1001.BIN",
+        "/PSX/scph1001.bin",
+        "/PSX/SCPH1000.BIN",
+        "/PSX/scph1000.bin",
+        "/psx/bios.bin",
+    };
+    size_t i;
+    for (i = 0; i < sizeof(bios_paths) / sizeof(bios_paths[0]); i++) {
+        uint8_t *buffer = NULL;
+        size_t buffer_size = 0;
+
+        if (!read_file(bios_paths[i], &buffer, &buffer_size)) {
+            continue;
+        }
+
+        if (psx_load_bios(&g_psx, buffer, buffer_size)) {
+            g_boot.bios_loaded = true;
+            free(buffer);
+            break;
+        }
+
+        free(buffer);
+    }
+    debug_log("BIOS: %d", g_boot.bios_loaded);
+
+    consoleSelect(&g_top_console);
+    consoleClear();
+    iprintf("PS1 Emulator\n");
+    iprintf("FAT: %s\n", g_boot.fat_ready ? "OK" : "FAIL");
+    iprintf("BIOS: %s\n", g_boot.bios_loaded ? "LOADED" : "NONE");
+    iprintf("RAM: %s (%luKB)\n", g_psx.ram_backend_name, (unsigned long)(g_psx.ram_size / 1024));
+
+     swiWaitForVBlank();
+     swiWaitForVBlank();
+     swiWaitForVBlank();
+
+     run_menu_mode();
+
+     if (!g_emulator_mode) {
+         // Try to load an executable from SD card if we haven't already booted via menu
+         try_load_exe(&g_psx, &g_boot);
+         g_auto_run = true;
+         g_run_batch = 1024;
+     }
+
     draw_state(&g_psx, &g_boot, total_steps);
 
     while (1) {
@@ -529,6 +626,9 @@ int main(void) {
         }
 
         if (keys_pressed & KEY_L) {
+            debug_log("Saving debug log...");
+            debug_save();
+            redraw = true;
             if (g_test_suite.test_mode && g_test_suite.total_tests > 0) {
                 test_save_results(&g_test_suite);
                 snprintf(g_boot.status_line, sizeof(g_boot.status_line),
@@ -551,7 +651,7 @@ int main(void) {
             }
             run_menu_mode();
             if (!g_emulator_mode) {
-                try_load_exe(&g_psx, &g_boot);
+                psx_reset(&g_psx);
             }
             total_steps = 0;
             g_auto_run = false;
@@ -588,4 +688,5 @@ int main(void) {
 
         swiWaitForVBlank();
     }
+    return 0;
 }

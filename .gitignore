@@ -1,0 +1,16 @@
+# Build artifacts
+*.o
+*.d
+*.elf
+*.nds
+*.lst
+*.map
+build/
+
+# Test files
+test.txt
+
+# Editor/IDE
+*.swp
+*~
+.DS_Store

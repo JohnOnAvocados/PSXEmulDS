@@ -224,7 +224,58 @@ void spu_write8(PsxSpuState *spu, uint32_t addr, uint8_t value) {
     }
 }
 
+static void spu_process_envelope(PsxSpuState *spu, int voice) {
+    uint16_t adsr_h = spu->voice_adsr_h[voice];
+    uint16_t adsr_l = spu->voice_adsr_l[voice];
+    uint16_t env = spu->voice_env[voice];
+    
+    uint8_t attack = (adsr_h >> 8) & 0x1F;
+    uint8_t decay = adsr_h & 0x1F;
+    uint8_t sustain = (adsr_l >> 8) & 0x7F;
+    uint8_t release = adsr_l & 0x1F;
+    
+    uint8_t key_on = (spu->key_on >> voice) & 1;
+    uint8_t key_off = (spu->key_off >> voice) & 1;
+    
+    uint8_t state = (env >> 14) & 3;
+    int16_t level = env & 0x7FFF;
+    
+    if (key_on && state == 0) {
+        state = 1;
+        level = 0;
+    } else if (key_off) {
+        state = 4;
+    }
+    
+    switch (state) {
+    case 1:
+        if (attack > 0) {
+            level += (0x8000 / (attack * 10));
+            if (level >= 0x7FFF) {
+                level = 0x7FFF;
+                state = 2;
+            }
+        }
+        break;
+    case 2:
+        level = 0x7FFF - ((0x7FFF - level) * decay / 32);
+        break;
+    case 4:
+        if (release > 0) {
+            level -= (level * release / 32);
+            if (level < 0) level = 0;
+        }
+        break;
+    }
+    
+    spu->voice_env[voice] = (state << 14) | (level & 0x7FFF);
+}
+
 void spu_update(PsxSpuState *spu, int16_t *buffer, int num_samples) {
+    for (int v = 0; v < 24; v++) {
+        spu_process_envelope(spu, v);
+    }
+    
     for (int i = 0; i < num_samples; i++) {
         buffer[i * 2 + 0] = 0;
         buffer[i * 2 + 1] = 0;

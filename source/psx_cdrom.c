@@ -1,8 +1,6 @@
-#include "psx_cdrom.h"
-
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "psx_cdrom.h"
 
 static uint8_t bcd_to_dec(uint8_t bcd) {
     return ((bcd >> 4) * 10) + (bcd & 0x0F);
@@ -81,11 +79,11 @@ void cdrom_load_image(PsxCdromState *cdrom, const char *path) {
                     cdrom->track_count++;
                 }
                 if (strncmp(line, "INDEX", 5) == 0) {
-                    char *nums = strchr(line, ' ');
-                    if (nums) {
-                        while (*nums && *nums < '0' || *nums > '9') nums++;
-                        uint32_t mm = 0, ss = 0, ff = 0;
-                        sscanf(nums, "%u:%u:%u", &mm, &ss, &ff);
+                     char *nums = strchr(line, ' ');
+                     if (nums) {
+                         while (*nums && (*nums < '0' || *nums > '9')) nums++;
+                         uint32_t mm = 0, ss = 0, ff = 0;
+                         sscanf(nums, "%lu:%lu:%lu", &mm, &ss, &ff);
                         current_lba = mm * 60 * 75 + ss * 75 + ff;
                         if (cdrom->track_count > 0 && cdrom->track_count <= 4) {
                             cdrom->track_lba[cdrom->track_count - 1] = current_lba;
