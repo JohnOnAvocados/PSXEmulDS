@@ -240,6 +240,14 @@ bool slot2_detect(void) {
         
         slot2_set_bus_ownership();
         
+        volatile uint16_t *mode_reg = (volatile uint16_t*)0x09FFFFFE;
+        mode_reg[0] = 0xA55A;
+        mode_reg[0] = 0xA55A;
+        mode_reg[0] = SUPERCHIS_MODE_RAM;
+        mode_reg[0] = SUPERCHIS_MODE_RAM;
+        
+        for (volatile int i = 0; i < 100; i++);
+        
         bool detected = test_ram_at_address(0x0C000000, 32 * 1024 * 1024);
         
         if (detected) {
@@ -270,25 +278,10 @@ bool slot2_detect(void) {
     g_slot2.type = SLOT2_NONE;
     g_slot2.size = 0;
     
-    if (detect_superchis_prime()) {
-        iprintf("slot2: === SUCCESS ===\n");
-        return true;
-    }
-    
-    if (detect_ace3ds_ram()) {
-        iprintf("slot2: === SUCCESS ===\n");
-        return true;
-    }
-    
-    if (detect_generic_slot2()) {
-        iprintf("slot2: === SUCCESS ===\n");
-        return true;
-    }
-    
     strncpy(g_slot2.name, "None", sizeof(g_slot2.name) - 1);
     g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
-    iprintf("slot2: No Slot-2 RAM found\n");
-    iprintf("slot2: Use START+SELECT to try manual mode\n");
+    iprintf("slot2: No Slot-2 RAM\n");
+    iprintf("slot2: Use START+SELECT for manual\n");
     
     return false;
 }
