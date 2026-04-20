@@ -712,13 +712,15 @@ int main(void) {
                 bool new_status = slot2_get_manual_status();
                 if (new_status) {
                     slot2_detect();
+                    psx_refresh_ram(&g_psx);
                     iprintf("slot2: Manual mode ON - re-detecting...\n");
                 } else {
                     slot2_detect();
+                    psx_refresh_ram(&g_psx);
                     iprintf("slot2: Manual mode OFF - re-detecting...\n");
                 }
                 snprintf(g_boot.status_line, sizeof(g_boot.status_line),
-                    "Slot2: %s", new_status ? "Manual" : "Auto");
+                    "RAM: %s", g_psx.ram_backend_name);
                 redraw = true;
             }
             g_slot2_manual_toggle = true;

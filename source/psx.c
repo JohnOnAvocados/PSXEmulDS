@@ -1629,6 +1629,21 @@ void psx_init_slot2(PsxState *psx) {
     }
 }
 
+void psx_refresh_ram(PsxState *psx) {
+    psx->slot2 = &g_slot2_device;
+    
+    size_t ram_size = slot2_get_ram_size();
+    if (ram_size > 0) {
+        psx->ram = slot2_get_device()->buffer;
+        psx->ram_size = ram_size;
+        snprintf(psx->ram_backend_name, sizeof(psx->ram_backend_name), "Slot2-%luKB", (unsigned long)(ram_size / 1024));
+    } else {
+        psx->ram = psx->ram_internal;
+        psx->ram_size = sizeof(psx->ram_internal);
+        snprintf(psx->ram_backend_name, sizeof(psx->ram_backend_name), "Internal");
+    }
+}
+
 void psx_update_peripherals(PsxState *psx, uint32_t cycles) {
     if (psx->gpu) {
         gpu_update(psx->gpu, cycles);

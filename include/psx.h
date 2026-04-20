@@ -222,6 +222,7 @@ void psx_init_gte(PsxState *psx);
 void psx_init_sio(PsxState *psx);
 void psx_init_memctrl(PsxState *psx);
 void psx_init_slot2(PsxState *psx);
+void psx_refresh_ram(PsxState *psx);
 void psx_update_peripherals(PsxState *psx, uint32_t cycles);
 void psx_render_frame(PsxState *psx);
 
