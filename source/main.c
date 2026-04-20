@@ -59,6 +59,7 @@ static GameMenu g_menu;
 static bool g_emulator_mode = false;
 static PsxPadState g_pad;
 static uint32_t g_last_pad_buttons = 0;
+static bool g_slot2_manual_toggle = false;
 
 static void draw_trace(const PsxState *psx) {
     uint32_t i;
@@ -702,6 +703,27 @@ int main(void) {
                 g_psx.test_mode = false;
             }
             redraw = true;
+        }
+
+        if ((held_keys & KEY_START) && (held_keys & KEY_SELECT)) {
+            if (!g_slot2_manual_toggle) {
+                bool current_manual = slot2_get_manual_status();
+                slot2_enable_manual(!current_manual);
+                bool new_status = slot2_get_manual_status();
+                if (new_status) {
+                    slot2_detect();
+                    iprintf("slot2: Manual mode ON - re-detecting...\n");
+                } else {
+                    slot2_detect();
+                    iprintf("slot2: Manual mode OFF - re-detecting...\n");
+                }
+                snprintf(g_boot.status_line, sizeof(g_boot.status_line),
+                    "Slot2: %s", new_status ? "Manual" : "Auto");
+                redraw = true;
+            }
+            g_slot2_manual_toggle = true;
+        } else {
+            g_slot2_manual_toggle = false;
         }
         
         if (g_auto_run && !g_psx.halted) {
