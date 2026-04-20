@@ -45,6 +45,8 @@ size_t slot2_get_ram_size(void);
 bool slot2_set_bank(uint8_t bank);
 uint8_t slot2_get_bank(void);
 bool slot2_has_ram(void);
+void slot2_enable_manual(bool enable);
+bool slot2_get_manual_status(void);
 bool slot2_read(Slot2Device *dev, uint32_t addr, uint8_t *data, size_t len);
 bool slot2_write(Slot2Device *dev, uint32_t addr, const uint8_t *data, size_t len);
 uint8_t slot2_read8(Slot2Device *dev, uint32_t addr);
