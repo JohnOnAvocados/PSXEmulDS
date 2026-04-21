@@ -49,8 +49,10 @@ typedef struct {
 
 static PsxState g_psx;
 static BootStatus g_boot;
-static PrintConsole g_top_console;
-static PrintConsole g_bottom_console;
+PrintConsole *g_top_console_ptr = NULL;
+PrintConsole *g_bottom_console_ptr = NULL;
+static PrintConsole g_top_console_local;
+static PrintConsole g_bottom_console_local;
 static bool g_auto_run = false;
 static uint32_t g_run_batch = 128;
 static uint32_t g_frame_skip = 0;
@@ -79,13 +81,13 @@ static void draw_trace(const PsxState *psx) {
 }
 
 static void draw_startup_message(const char *message) {
-    consoleSelect(&g_top_console);
+    consoleSelect(&g_top_console_local);
     consoleClear();
     iprintf("PSXEmulDS\n\n");
     iprintf("Starting up...\n");
     iprintf("%s\n", message);
 
-    consoleSelect(&g_bottom_console);
+    consoleSelect(&g_bottom_console_local);
     consoleClear();
     iprintf("PS1 Emulator\n\n");
     iprintf("%s\n", message);
@@ -341,7 +343,7 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
 }
 
 static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
-    consoleSelect(&g_top_console);
+    consoleSelect(&g_top_console_local);
     consoleClear();
 
     iprintf("PSXEmulDS proof of concept\n");
@@ -370,7 +372,7 @@ static void draw_state(const PsxState *psx, const BootStatus *boot, int steps) {
         iprintf("  current: %lu\n", (unsigned long)g_test_suite.current_test);
     }
 
-    consoleSelect(&g_bottom_console);
+    consoleSelect(&g_bottom_console_local);
     consoleClear();
 
     iprintf("Detailed State\n\n");
@@ -408,7 +410,7 @@ static void draw_video_output(void) {
     }
 
     if (g_psx.gpu == NULL) {
-        consoleSelect(&g_bottom_console);
+        consoleSelect(&g_bottom_console_local);
         consoleClear();
         iprintf("GPU NOT INITIALIZED");
         return;
@@ -439,7 +441,7 @@ static void draw_video_output(void) {
         }
     }
 
-    consoleSelect(&g_bottom_console);
+    consoleSelect(&g_bottom_console_local);
     consoleClear();
     iprintf("VRAM DEBUG");
     iprintf("first=%04x mid=%04x", (unsigned int)first_pixel, (unsigned int)mid_pixel);
@@ -448,7 +450,7 @@ static void draw_video_output(void) {
 }
 
 static void run_menu_mode(void) {
-    consoleSelect(&g_bottom_console);
+    consoleSelect(&g_bottom_console_local);
     consoleClear();
     
     menu_init(&g_menu);
@@ -471,10 +473,10 @@ static void run_menu_mode(void) {
         if (keys & KEY_A) {
             const char *selected = menu_get_selected(&g_menu);
             if (selected) {
-                consoleSelect(&g_top_console);
+                consoleSelect(&g_top_console_local);
                 consoleClear();
                 iprintf("Loading: %s\n", selected);
-                consoleSelect(&g_bottom_console);
+                consoleSelect(&g_bottom_console_local);
 
                 psx_reset(&g_psx);
                 psx_boot_bios(&g_psx);
@@ -508,10 +510,13 @@ int main(void) {
     videoSetModeSub(MODE_0_2D);
     vramSetBankA(VRAM_A_MAIN_BG);
     vramSetBankC(VRAM_C_SUB_BG);
-    consoleInit(&g_top_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);
-    consoleInit(&g_bottom_console, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
+    consoleInit(&g_top_console_local, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);
+    consoleInit(&g_bottom_console_local, 3, BgType_Text4bpp, BgSize_T_256x256, 31, 0, false, true);
+    
+    g_top_console_ptr = &g_top_console_local;
+    g_bottom_console_ptr = &g_bottom_console_local;
 
-    consoleSelect(&g_bottom_console);
+    consoleSelect(&g_bottom_console_local);
     consoleClear();
     iprintf("PSXEmulDS Debug\n");
     iprintf("================\n");
@@ -587,7 +592,7 @@ int main(void) {
     }
     debug_log("BIOS: %d", g_boot.bios_loaded);
 
-    consoleSelect(&g_top_console);
+    consoleSelect(&g_top_console_local);
     consoleClear();
     iprintf("PS1 Emulator\n");
     iprintf("FAT: %s\n", g_boot.fat_ready ? "OK" : "FAIL");
