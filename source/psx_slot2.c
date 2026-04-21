@@ -344,6 +344,15 @@ bool slot2_detect(void) {
     
     g_slot2_detecting = true;
     
+    iprintf("slot2: Detection disabled for safety\n");
+    g_slot2.detected = true;
+    g_slot2.type = SLOT2_NONE;
+    g_slot2.size = 0;
+    g_slot2.buffer = NULL;
+    g_slot2_detecting = false;
+    return false;
+    
+#if 0
     slot2_set_bus_ownership();
     
     iprintf("slot2: Starting auto-detection...\n");
@@ -388,6 +397,7 @@ bool slot2_detect(void) {
     
     g_slot2_detecting = false;
     return false;
+#endif
 }
 
 void slot2_show_detection_ui(bool *running) {
