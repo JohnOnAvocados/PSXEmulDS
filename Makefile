@@ -20,12 +20,12 @@ INCLUDES		:=	include
 #---------------------------------------------------------------------------------
 # NDS icon and banner - Made by JohnOnAvocados
 #---------------------------------------------------------------------------------
-ifneq ($(wildcard icon.bin),)
-	ICONFLAGS	:=	--icon icon.bin
+ifneq ($(wildcard icon.bmp),)
+	ICONFLAGS	:=	--icon icon.bmp
 endif
 
-ifneq ($(wildcard banner.bin),)
-	ICONFLAGS	+=	--banner banner.bin
+ifneq ($(wildcard banner.bmp),)
+	ICONFLAGS	+=	--banner banner.bmp
 endif
 
 #---------------------------------------------------------------------------------
