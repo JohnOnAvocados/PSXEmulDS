@@ -16,14 +16,16 @@ BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
 INCLUDES		:=	include
-ICON		:=	icon.png
 
 #---------------------------------------------------------------------------------
-# NDS icon and banner (auto-converted from PNG)
+# NDS icon and banner - Made by JohnOnAvocados
 #---------------------------------------------------------------------------------
-ifneq ($(wildcard $(ICON)),)
-	GFX		:=	$(OUTPUT).bmp
-	ICONFLAGS	:=	--icon $(ICON)
+ifneq ($(wildcard icon.bin),)
+	ICONFLAGS	:=	--icon icon.bin
+endif
+
+ifneq ($(wildcard banner.bin),)
+	ICONFLAGS	+=	--banner banner.bin
 endif
 
 #---------------------------------------------------------------------------------
