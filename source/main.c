@@ -275,8 +275,18 @@ static void try_load_exe(PsxState *psx, BootStatus *boot) {
              break;
          }
 
-         debug_log("Failed to load BIOS from %s", bios_paths[i]);
+debug_log("Failed to load BIOS from %s", bios_paths[i]);
          free(buffer);
+     }
+
+     if (!boot->bios_loaded) {
+         debug_error("BIOS NOT FOUND - No valid BIOS file found in /PSX/ folder");
+         debug_error("Please place a PS1 BIOS file (scph1001.bin, scph1000.bin, or bios.bin) in /PSX/");
+         snprintf(boot->status_line, sizeof(boot->status_line),
+             "ERROR: Place bios.bin in /PSX/ folder");
+         boot->status_line[sizeof(boot->status_line) - 1] = '\0';
+         boot_demo(psx, boot);
+         return;
      }
 
     draw_startup_message("Scanning PS-X EXE...");
@@ -481,8 +491,14 @@ static void run_menu_mode(void) {
                 psx_reset(&g_psx);
                 psx_boot_bios(&g_psx);
 
-                videoSetMode(MODE_0_2D);
-                vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
+                videoSetMode(MODE_5_2D);
+                vramSetBankA(VRAM_A_LCD);
+                vramSetBankB(VRAM_B_LCD);
+                vramSetBankC(VRAM_C_LCD);
+                vramSetBankD(VRAM_D_LCD);
+                vramSetBankE(VRAM_E_LCD);
+                vramSetBankF(VRAM_F_LCD);
+                vramSetBankG(VRAM_G_LCD);
 
                 g_emulator_mode = true;
                 g_auto_run = true;

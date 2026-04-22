@@ -1,5 +1,6 @@
 psx_slot2.o: C:/DS_Homebrew/PSXEmulDS/source/psx_slot2.c \
  C:/DS_Homebrew/PSXEmulDS/include/psx_slot2.h \
+ C:/DS_Homebrew/PSXEmulDS/include/psx_debug.h \
  C:/devkitPro/libnds/include/nds.h C:/devkitPro/calico/include/calico.h \
  C:/devkitPro/calico/include/calico/types.h \
  C:/devkitPro/calico/include/calico/arm/psr.h \
@@ -113,6 +114,7 @@ psx_slot2.o: C:/DS_Homebrew/PSXEmulDS/source/psx_slot2.c \
  C:/devkitPro/libnds/include/nds/arm9/video.h \
  C:/devkitPro/libnds/include/nds/arm9/videoGL.h
 C:/DS_Homebrew/PSXEmulDS/include/psx_slot2.h:
+C:/DS_Homebrew/PSXEmulDS/include/psx_debug.h:
 C:/devkitPro/libnds/include/nds.h:
 C:/devkitPro/calico/include/calico.h:
 C:/devkitPro/calico/include/calico/types.h:

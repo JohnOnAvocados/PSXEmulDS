@@ -1,4 +1,5 @@
 #include "psx_slot2.h"
+#include "psx_debug.h"
 
 #include <nds.h>
 #include <string.h>
@@ -344,18 +345,12 @@ bool slot2_detect(void) {
     
     g_slot2_detecting = true;
     
-    iprintf("slot2: Detection disabled for safety\n");
-    g_slot2.detected = true;
-    g_slot2.type = SLOT2_NONE;
-    g_slot2.size = 0;
-    g_slot2.buffer = NULL;
-    g_slot2_detecting = false;
-    return false;
+    debug_info("Slot-2: Starting auto-detection...");
+    iprintf("slot2: Starting auto-detection...\n");
     
-#if 0
     slot2_set_bus_ownership();
     
-    iprintf("slot2: Starting auto-detection...\n");
+    bool detected = false;
     
     for (int i = 0; i < sizeof(slot2definitions) / sizeof(slot2definitions[0]); i++) {
         slot2_definition_t *def = &slot2definitions[i];
@@ -364,6 +359,7 @@ bool slot2_detect(void) {
             break;
         }
         
+        debug_info("Slot-2: Trying %s...", def->name);
         iprintf("slot2: Trying %s...\n", def->name);
         
         if (def->detect()) {
@@ -378,12 +374,17 @@ bool slot2_detect(void) {
             strncpy(g_slot2.name, def->name, sizeof(g_slot2.name) - 1);
             g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
             
+            debug_info("Slot-2: Detected %s at %p, %lu KB", 
+                def->name, g_slot2_ram_base, (unsigned long)(g_slot2_ram_size / 1024));
             iprintf("slot2: Detected %s\n", def->name);
             iprintf("slot2: RAM at %p, %lu KB\n", g_slot2_ram_base, (unsigned long)(g_slot2_ram_size / 1024));
             
+            detected = true;
             g_slot2_detecting = false;
             return true;
         }
+        
+        debug_warning("Slot-2: %s detection failed", def->name);
     }
     
     g_slot2.detected = true;
@@ -393,11 +394,12 @@ bool slot2_detect(void) {
     
     strncpy(g_slot2.name, "None", sizeof(g_slot2.name) - 1);
     g_slot2.name[sizeof(g_slot2.name) - 1] = '\0';
+    
+    debug_error("Slot-2: No RAM detected - tried SuperCard, M3, G6, EZ Flash");
     iprintf("slot2: No Slot-2 RAM found\n");
     
     g_slot2_detecting = false;
     return false;
-#endif
 }
 
 void slot2_show_detection_ui(bool *running) {

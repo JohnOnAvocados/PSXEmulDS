@@ -7,6 +7,7 @@
 #include "psx_memctrl.h"
 #include "psx_slot2.h"
 
+#include <nds.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -1665,5 +1666,29 @@ void psx_update_peripherals(PsxState *psx, uint32_t cycles) {
 }
 
 void psx_render_frame(PsxState *psx) {
-    (void)psx;
+    if (psx == NULL || psx->gpu == NULL) {
+        return;
+    }
+
+    PsxGpuState *gpu = psx->gpu;
+    uint16_t *psx_vram = gpu->vram;
+
+    uint16_t *framebuffer = (uint16_t *)0x06000000;
+    int fb_width = 256;
+    int fb_height = 192;
+
+    int psx_x = gpu->display_x;
+    int psx_y = gpu->display_y;
+
+    for (int dy = 0; dy < fb_height; dy++) {
+        for (int dx = 0; dx < fb_width; dx++) {
+            int src_y = (psx_y + dy) % PSX_GPU_VRAM_HEIGHT;
+            int src_x = (psx_x + dx) % PSX_GPU_VRAM_WIDTH;
+            
+            uint16_t pixel = psx_vram[src_y * PSX_GPU_VRAM_WIDTH + src_x];
+            framebuffer[dy * 256 + dx] = pixel;
+        }
+    }
+    
+    DC_FlushRange(framebuffer, fb_width * fb_height * 2);
 }
