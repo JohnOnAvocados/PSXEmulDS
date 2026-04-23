@@ -62,6 +62,9 @@ static bool g_emulator_mode = false;
 static PsxPadState g_pad;
 static uint32_t g_last_pad_buttons = 0;
 static bool g_slot2_manual_toggle = false;
+static uint32_t g_log_flash_timer = 0;
+
+#define LOG_FLASH_DURATION 60
 
 static void draw_trace(const PsxState *psx) {
     uint32_t i;
@@ -675,6 +678,7 @@ int main(void) {
         if (keys_pressed & KEY_L) {
             debug_log("Saving debug log...");
             debug_save();
+            g_log_flash_timer = LOG_FLASH_DURATION;
             redraw = true;
             if (g_test_suite.test_mode && g_test_suite.total_tests > 0) {
                 test_save_results(&g_test_suite);
@@ -750,6 +754,14 @@ int main(void) {
 
         if (g_emulator_mode && !g_test_suite.test_mode) {
             draw_video_output();
+        }
+
+        if (g_log_flash_timer > 0) {
+            g_log_flash_timer--;
+            consoleSelect(&g_bottom_console_local);
+            consoleClear();
+            iprintf("\n\n\n\n\n\n\n\n\n\n                          LOGGED");
+            redraw = true;
         }
 
         if (redraw) {
