@@ -1,4 +1,4 @@
-psx_menu.o: C:/DS_Homebrew/PSXEmulDS/source/psx_menu.c \
+psx_menu.o: C:/DS_Homebrew/PSXEmulDS/arm9/psx_menu.c \
  C:/DS_Homebrew/PSXEmulDS/include/psx_menu.h \
  C:/devkitPro/libnds/include/nds.h C:/devkitPro/calico/include/calico.h \
  C:/devkitPro/calico/include/calico/types.h \

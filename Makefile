@@ -9,21 +9,23 @@ endif
 include $(DEVKITARM)/ds_rules
 
 #---------------------------------------------------------------------------------
-# Target and source layout
+# Target and source layout - Made by JohnOnAvocados
 #---------------------------------------------------------------------------------
 TARGET		:=	PSXEmulDS
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	arm9
 DATA		:=	data
 INCLUDES		:=	include
-ICON		:=	icon.png
 
 #---------------------------------------------------------------------------------
-# NDS icon and banner (auto-converted from PNG)
+# NDS icon (supports BMP and PNG)
 #---------------------------------------------------------------------------------
-ifneq ($(wildcard $(ICON)),)
-	GFX		:=	$(OUTPUT).bmp
-	ICONFLAGS	:=	--icon $(ICON)
+ifneq ($(wildcard icon.bmp),)
+ICONFLAGS	:=	--icon icon.bmp
+else
+ifneq ($(wildcard icon.png),)
+ ICONFLAGS	:=	--icon icon.png
+endif
 endif
 
 #---------------------------------------------------------------------------------

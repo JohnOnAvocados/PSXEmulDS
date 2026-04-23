@@ -1,4 +1,4 @@
-psx_bios.o: C:/DS_Homebrew/PSXEmulDS/source/psx_bios.c \
+psx_bios.o: C:/DS_Homebrew/PSXEmulDS/arm9/psx_bios.c \
  C:/DS_Homebrew/PSXEmulDS/include/psx.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx_gpu.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx_dma.h \

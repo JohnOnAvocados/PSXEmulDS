@@ -1,4 +1,4 @@
-psx_slot2.o: C:/DS_Homebrew/PSXEmulDS/source/psx_slot2.c \
+psx_slot2.o: C:/DS_Homebrew/PSXEmulDS/arm9/psx_slot2.c \
  C:/DS_Homebrew/PSXEmulDS/include/psx_slot2.h \
  C:/DS_Homebrew/PSXEmulDS/include/psx_debug.h \
  C:/devkitPro/libnds/include/nds.h C:/devkitPro/calico/include/calico.h \

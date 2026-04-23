@@ -1,4 +1,4 @@
-psx_spu.o: C:/DS_Homebrew/PSXEmulDS/source/psx_spu.c \
+psx_spu.o: C:/DS_Homebrew/PSXEmulDS/arm9/psx_spu.c \
  C:/DS_Homebrew/PSXEmulDS/include/psx_spu.h \
  C:/devkitPro/libnds/include/nds.h C:/devkitPro/calico/include/calico.h \
  C:/devkitPro/calico/include/calico/types.h \

@@ -1,4 +1,4 @@
-psx_debug.o: C:/DS_Homebrew/PSXEmulDS/source/psx_debug.c \
+psx_debug.o: C:/DS_Homebrew/PSXEmulDS/arm9/psx_debug.c \
  C:/DS_Homebrew/PSXEmulDS/include/psx_debug.h \
  C:/devkitPro/libnds/include/nds.h C:/devkitPro/calico/include/calico.h \
  C:/devkitPro/calico/include/calico/types.h \

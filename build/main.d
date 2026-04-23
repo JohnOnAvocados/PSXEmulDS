@@ -1,4 +1,4 @@
-main.o: C:/DS_Homebrew/PSXEmulDS/source/main.c \
+main.o: C:/DS_Homebrew/PSXEmulDS/arm9/main.c \
  C:/devkitPro/libnds/include/nds.h C:/devkitPro/calico/include/calico.h \
  C:/devkitPro/calico/include/calico/types.h \
  C:/devkitPro/calico/include/calico/arm/psr.h \
