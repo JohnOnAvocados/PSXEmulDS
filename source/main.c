@@ -491,14 +491,8 @@ static void run_menu_mode(void) {
                 psx_reset(&g_psx);
                 psx_boot_bios(&g_psx);
 
-                videoSetMode(MODE_5_2D);
-                vramSetBankA(VRAM_A_LCD);
-                vramSetBankB(VRAM_B_LCD);
-                vramSetBankC(VRAM_C_LCD);
-                vramSetBankD(VRAM_D_LCD);
-                vramSetBankE(VRAM_E_LCD);
-                vramSetBankF(VRAM_F_LCD);
-                vramSetBankG(VRAM_G_LCD);
+                videoSetMode(MODE_0_2D);
+                vramSetBankA(VRAM_A_MAIN_BG_0x06000000);
 
                 g_emulator_mode = true;
                 g_auto_run = true;
