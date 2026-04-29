@@ -1,147 +1,184 @@
 # PSXEmulDS Implementation Plan
 
-PlayStation 1 emulator for Nintendo DS - consolidated implementation roadmap.
+## Project Overview
 
-## Current Status (Alpha)
+**Goal:** Create a PlayStation 1 emulator for Nintendo DS using software-only emulation.
 
-The emulator has a functional CPU core and memory system, plus all major PS1 subsystems implemented:
-- CPU, Memory, BIOS, Interrupts, Timers - COMPLETE
-- GPU, CD-ROM, DMA - COMPLETE
-- GTE, SIO, PAD, MDEC - COMPLETE
-- Sound (SPU) - STUB (silence only)
-
-## Completed Phases
-
-### Phase 1-3: Core System
-- MIPS R3000A CPU (~95% coverage)
-- Memory system (1MB RAM, 512KB BIOS)
-- Interrupt system, timers
-- BIOS stubs
-
-### Phase 4-6: Storage & Graphics
-- CD-ROM controller
-- DMA controller
-- GPU with VRAM
-
-### Phase 7-8: Peripherals
-- Controller (PAD) polling
-- Memory card support
-- MDEC video decoder
-
-### Phase 9: GTE & System
-- Geometry Transformation Engine
-- Serial Interface (SIO)
-- Memory Control registers
-
-## Next Phases (Priority Order)
-
-### Phase 10: Sound (SPU) - HIGH PRIORITY
-| Component | Implementation | Priority |
-|-----------|---------------|-----------|
-| ADPCM decoder | 24-channel ADPCM | High |
-| ADSR envelopes | Attack/Decay/Sustain/Release | High |
-| Modular design | Can compile out when disabled | HIGH |
-
-**Design**: Compile-time option to disable for performance
-
-### Phase 11: Display Output - HIGH PRIORITY
-| Component | Target |
-|-----------|--------|
-| Resolution | 192x192 (DS screen optimized) |
-| Frame copy | Optimized VRAM→DS |
-| V-blank | Sync |
-| Interlace | Field toggling |
-
-### Phase 12: Controller Input - HIGH PRIORITY
-| Component | Implementation |
-|-----------|------------|
-| PAD polling | Serial read every frame |
-| Button map | DS → PS1 mapping |
-| Analog | DualShock ready |
-
-### Phase 13: Game Loading - MEDIUM
-| Component | Implementation |
-|-----------|------------|
-| CUE parser | Track LBA mapping |
-| ISO9660 | Sector reading |
-| Multi-bin | File switching |
-
-### Phase 14: Memory Expansion - MEDIUM
-| Component | Implementation |
-|-----------|------------|
-| Slot-2 RAM | 2MB PS1 RAM |
-| Banking | 2MB→32MB mapping |
-
-## Architecture Notes
-
-### Memory Budget (DS 3.5MB ARM9 limit)
-| Component | Size |
-|-----------|------|
-| PS1 RAM | 1 MB |
-| PS1 BIOS | 512 KB |
-| GPU VRAM | 256×256 |
-| Scratchpad | 1 KB |
-| I/O | 4 KB |
-| **Total Static** | ~1.65 MB |
-
-### Display Configuration
-- Target: 192×192 (fits DS screen)
-- PS1 original: 256×240
-- Scale: 0.75x with letterboxing
-
-### Performance Targets
-- PS1 CPU: 33.8688 MHz MIPS R3000A
-- DS ARM9: 67 MHz
-- Expected: 2-5 FPS (simple games), <1 FPS (complex)
-
-## Controls (In-Emulator)
-
-| Button | Action |
-|--------|--------|
-| A | Execute 1 instruction |
-| B | Execute current batch |
-| Y | Execute 8 batches |
-| X | Toggle auto-run |
-| L | Halve batch size |
-| R | Double batch size |
-| START | Reload/reboot |
-| SELECT | Toggle test mode |
-
-## File Loading (Priority)
-
-1. `/psx/boot.exe` or `/PSX/BOOT.EXE`
-2. `/psx/demo.bin` (raw at 0x10000)
-3. `/psx/scph1001.bin` (BIOS boot)
-4. Built-in demo
-
-## Build
-
-```powershell
-make
-```
-
-Produces `PSXEmulDS.nds`.
-
-## Technical References
-
-- psx-spx.consoledev.net - Full PS1 hardware specs
-- devkitPro / libnds - DS homebrew SDK
-- libfat - SD card access
-
-## Known Limitations
-
-- Sound: Stub only (no audio output)
-- Display: Basic VRAM copy
-- Controller: Not yet mapped to DS input
-- Memory: 1MB (2MB via Slot-2)
-
-## Future Development
-
-1. Sound implementation (Phase 10)
-2. Display optimization (Phase 11)
-3. Controller integration (Phase 12)
-4. Game loading (Phase 13)
-5. Memory expansion (Phase 14)
+**Reality Check:** Software-only emulation on the DS's 67MHz ARM9 is not sufficient to run PS1 games at playable framerates. The PS1 requires a MIPS R3000A CPU (~33MHz) plus GPU, SPU, and DMA emulation - too much for the DS to handle in software.
 
 ---
-Last Updated: 2026-04-19
+
+## Current Implementation Status
+
+### Completed Components
+
+| Component | File | Status |
+|-----------|------|--------|
+| CPU Core | `arm9/psx.c` | ~95% MIPS R3000A |
+| Memory | `arm9/psx.c` | 1MB RAM |
+| BIOS | `arm9/psx_bios.c` | Implemented |
+| GPU | `arm9/psx_gpu.c` | Basic rendering |
+| CD-ROM | `arm9/psx_cdrom.c` | Working |
+| DMA | `arm9/psx_dma.c` | Working |
+| GTE | `arm9/psx_gte.c` | Implemented |
+| SIO | `arm9/psx_sio.c` | Implemented |
+| PAD | `arm9/psx_pad.c` | Implemented |
+| MDEC | `arm9/psx_mdec.c` | Implemented |
+| SPU | `arm9/psx_spu.c` | Stub only |
+| Slot-2 | `arm9/psx_slot2.c` | Disabled for safety |
+| Memory Card | `arm9/psx_memctrl.c` | Implemented |
+
+### Build Configuration
+
+- **Optimization:** -O3 (changed from -O2)
+- **Display:** MODE_5_2D with DMA copy
+- **ARGV Support:** Enabled for TWiLight Menu++
+- **Slot-2:** Manual detection only
+
+---
+
+## Hardware Investigation
+
+### Why Software-Only Emulation Doesn't Work
+
+| PS1 Component | Requirement | DS ARM9 (67MHz) |
+|---------------|-------------|-----------------|
+| CPU | ~33MHz MIPS | Too slow |
+| GPU | Polygon rendering | No hardware assist |
+| SPU | 24-channel ADPCM | No audio hardware |
+| DMA | 7 channels | Software emulation |
+| CD-ROM | ISO reading | Possible |
+
+The DS simply lacks the processing power to emulate all PS1 components in real-time.
+
+### Alternative Hardware Approaches Investigated
+
+#### 1. Custom MIPS Cartridge (FPGA)
+
+Attempted to create a custom cartridge with MIPS co-processor:
+
+- **FPGA Required:** Xilinx Artix-7 100T (101k LUTs) - too large for DS cart
+- **MIPS Cores:** MPX, aoR3000, PS-FPGA available
+- **Issues:**
+  - No FPGA fits 35mm cartridge form factor
+  - PS1 needs ~4MB memory (can't fit on cart)
+  - No video output path through cartridge
+  - Power budget insufficient (~1.65W available)
+
+#### 2. Existing Solutions
+
+| Device | MIPS CPU? | Status | Price |
+|--------|-----------|--------|-------|
+| SuperCard DSTWO | Yes (JZ4732) | Discontinued | $80-150 |
+| DSpico | No (RP2040) | Available, open-source | ~$50 |
+| EZ-Flash Parallel | Has unused FPGA | Available | ~$40 |
+
+**DSTWO** is the only option that works - it has a real MIPS processor that runs Linux with psx4all emulator (~10-15 FPS, no sound).
+
+---
+
+## Technical Details
+
+### Memory Architecture
+
+```
+PS1 Memory Map (2MB RAM):
+├── 0x00000000-0x001FFFFF : Expansion (unused)
+├── 0x1F000000-0x1F7FFFFF : BIOS (512KB)
+├── 0x1F800000-0x1F801FFF : I/O registers
+├── 0x1F802000-0x1F803FFF : Scratchpad (2KB)
+└── 0x20000000-0x203FFFFF : Main RAM (2MB)
+
+DS Implementation:
+- 1MB internal RAM (reduced from 2MB)
+- 512KB BIOS
+- 256x256 VRAM
+- Total: ~1.65MB static
+```
+
+### DS Display
+
+- **Mode:** MODE_5_2D (bitmap)
+- **Resolution:** 192x192 (letterboxed from 256x240 PS1)
+- **Frame copy:** DMA from VRAM to display buffer
+
+### Slot-2 Implementation
+
+- **Auto-detection:** Disabled (caused crashes on some carts)
+- **Manual mode:** Press SELECT → A to detect
+- **Supported:** SuperCard, M3, G6, EZ Flash detection code included
+
+### TWiLight Menu++ Support
+
+- ARGV parsing implemented
+- Reads `.argv` file for game path
+- Requires `.argv` file alongside `.nds`
+
+---
+
+## Development Notes
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `arm9/main.c` | DS entry, display, input |
+| `arm9/psx.c` | CPU interpreter |
+| `arm9/psx_gpu.c` | Graphics rendering |
+| `arm9/psx_cdrom.c` | Disc reading |
+| `arm9/psx_slot2.c` | RAM expansion |
+| `include/psx_slot2.h` | Slot-2 definitions |
+
+### Compiler Flags
+
+```
+-march=armv5te -mtune=arm946e-s -mthumb -O3
+```
+
+### Build Output
+
+- `PSXEmulDS.nds` - Ready to run
+- `PSXEmulDS.elf` - Debug symbols
+
+---
+
+## Future Directions
+
+### If Resuming Development
+
+1. **Fix SPU** - Implement actual sound output via ARM7
+2. **Optimize CPU** - Lookahead JIT-style optimization
+3. **Better display** - Faster VRAM copy
+4. **Test on hardware** - Verify current state works
+
+### Alternative Paths
+
+1. **Move to 3DS** - Much faster, can run PS1 at full speed
+2. **Use other handhelds** - RGB30/RG35XX have better emulation support
+3. **Build custom hardware** - FPGA cartridge (significant effort)
+
+---
+
+## Research Sources
+
+- GBATEK - DS/PS1 hardware reference
+- PS-FPGA project - Verilog PS1 implementation
+- pgate1/PlayStation_on_FPGA - Complete PS1 on FPGA
+- DSpico - Open-source DS cartridge
+- libnds/libfat documentation
+- No$PSX specs
+
+---
+
+## Last Updated
+
+2026-04-29
+
+## Project History
+
+- Created as educational PS1 emulator project
+- Implemented full CPU/GPU/CDROM/DMA subsystems
+- Found software-only emulation insufficient
+- Investigated FPGA/MIPS cartridge alternatives
+- Documented hardware approaches and limitations
+- Project paused - hardware requirements not feasible for DS form factor
