@@ -1,276 +1,169 @@
 # PSXEmulDS
 
-`PSXEmulDS` is a Nintendo DS homebrew PlayStation 1 emulator for running PS1 games on real DS hardware.
+A Nintendo DS homebrew PlayStation 1 (PS1) emulator.
 
-The goal is to create a PS1 emulator that boots games and runs them at lower FPS rather than constantly crashing. While not expected to match PC emulator performance, functional game execution is the priority.
+## Overview
 
-## Current Status - Alpha
+PSXEmulDS is a software-based PS1 emulator targeting the original Nintendo DS and DS Lite hardware. It aims to emulate the Sony PlayStation 1 using only the DS's ARM9 processor without requiring any special cartridge hardware.
 
-- **Working**: CPU, GPU, CD-ROM, DMA, Timers, GTE, SIO, PAD, MDEC
-- **In Progress**: Sound (SPU), Display optimization, Controller integration
-- **Todo**: Sound implementation, display output optimization
+**Important:** This project is primarily an educational/learned project. Due to the DS's limited processing power (67MHz ARM9 vs the PS1's 33MHz MIPS R3000A), full-speed game playback is not achievable with software-only emulation. Actual game execution requires specialized hardware like the discontinued SuperCard DSTWO (which has its own MIPS co-processor).
 
-## Research Log - 2026-04-18
+## Current Status
 
-### Issue: FAT Initialization Fails
-- **Symptom**: `fatInit(0, 0)` returns false - no SD card access
-- **Environment**: Ace3DS X (Slot-1) + TwilightMenu++ + DS Lite
-- **Expected**: Should work like NesDS, GBARunner2 which work on same setup
+| Component | Status |
+|-----------|--------|
+| CPU (MIPS R3000A) | Implemented (~95%) |
+| Memory (1MB RAM) | Implemented |
+| BIOS | Implemented (stub) |
+| GPU/Graphics | Implemented (basic) |
+| CD-ROM | Implemented |
+| DMA | Implemented |
+| GTE (Geometry) | Implemented |
+| SPU (Sound) | Stub only |
+| Controller | Implemented |
+| Memory Card | Implemented |
 
-### Root Cause Identified
-- **Wrong**: `fatInit(0, 0)` - cache size 0, not set as default device
-- **Correct**: `fatInitDefault()` - default cache (5 pages), set as default device
+## Requirements
 
-### Reference Sources
-- nds-hb-menu bootstrap.c uses `fatInitDefault()`
-- nesDS uses `fatInitDefault()`  
-- libfat documentation: "-lfat must come before -lnds9"
-- libnds has internal FAT replacement for newer devkitPro
+- **Hardware:** Nintendo DS, DS Lite, or DSi (original DS preferred for homebrew)
+- **Software:** devkitPro with libnds and libfat
+- **Storage:** MicroSD card for loading PS1 games
 
-### Fix (IMPLEMENTED SOON)
-- Change `fatInit(0, 0)` to `fatInitDefault()`
+## Building
 
-The project has completed Phase 1 (Stabilization), Phase 2 (Boot Capability), and Phase 3 (Runtime):
-
-**Phase 1 - Stabilization:**
-- Complete MIPS R3000A instruction set (~95% coverage)
-- Interrupt system with hardware IRQ support
-- Timer hardware (Timer 0-2)
-- Expanded BIOS call stubs
-- Modular sound stub (branch-ready)
-- Slot-2 RAM support (SuperCard compatible)
-- Batch testing mode with error codes
-
-**Phase 2 - Boot Capability:**
-- CD-ROM controller implementation
-- DMA controller implementation
-- PS-X EXE parsing and loading
-
-**Phase 3 - Runtime:**
-- GPU/VDC skeleton with VRAM
-- Software framebuffer rendering
-- V-blank interrupt timing
-- Peripheral update system
-
-## Build
-
-You need a working `devkitPro` + `libnds` environment.
-
-```powershell
+```bash
 make
 ```
 
-This should produce `PSXEmulDS.nds`.
+This produces `PSXEmulDS.nds` which can be run on the DS via:
+- TWiLight Menu++ (recommended)
+- Direct boot via flashcart
+- GBARunner2 (for Slot-1)
 
-## Project Layout
+## Project Structure
 
-**Core Files:**
-- `source/main.c`: DS entry point and on-screen debugger
-- `source/psx.c`: PS1 core logic and CPU interpreter
-- `include/psx.h`: Core state definitions and interrupt constants
+```
+PSXEmulDS/
+├── arm9/              # ARM9 (main) source code
+│   ├── main.c         # DS entry point
+│   ├── psx.c          # PS1 CPU core
+│   ├── psx_gpu.c      # Graphics processing
+│   ├── psx_cdrom.c    # CD-ROM controller
+│   ├── psx_dma.c      # DMA controller
+│   ├── psx_spu.c      # Sound (stub)
+│   └── ...
+├── arm7/              # ARM7 (audio/input) source
+├── include/           # Header files
+├── icon.bmp           # NDS icon
+├── Makefile           # Build configuration
+└── README.md          # This file
+```
 
-**Subsystem Files:**
-- `source/psx_exe.c`: PS-X EXE parsing and RAM loading
-- `source/psx_cdrom.c`: CD-ROM controller implementation
-- `source/psx_dma.c`: DMA controller implementation
-- `source/psx_gpu.c`: GPU/VDC with VRAM (256x256)
-- `source/psx_spu.c`: Sound stub (modular, can be disabled)
-- `source/psx_slot2.c`: Slot-2 RAM expansion support
+## Running Games
 
-**Header Files:**
-- `include/psx_exe.h`: Executable loader definitions
-- `include/psx_cdrom.h`: CD-ROM register definitions
-- `include/psx_dma.h`: DMA channel definitions
-- `include/psx_gpu.h`: GPU register definitions
-- `include/psx_spu.h`: Sound register definitions
-- `include/psx_slot2.h`: Slot-2 device definitions
+### Via TWiLight Menu++
 
-## Implementation Roadmap
+1. Copy `PSXEmulDS.nds` to your SD card
+2. Place PS1 game files in `/psx/` folder
+3. Launch via TWiLight Menu++
 
-### Phase 1: Stabilization (COMPLETE)
-Goal: Games don't immediately halt on unimplemented opcodes
+### Supported File Formats
 
-- Complete MIPS R3000A instruction set
-- Implement interrupt system (COP0, hardware interrupts)
-- Implement timer hardware (Timer 0-2)
-- Expand BIOS call stubs
-- Add error code system for testing
+- `.exe` - PS-X executable files
+- `.bin` - Raw binary files
+- `.iso` - CD disc images (basic support)
 
-### Phase 2: Boot Capability (COMPLETE)
-Goal: Games can load from CD and reach main menu
+### File Loading Priority
 
-- CD-ROM controller implementation
-- DMA controller implementation
-- GPU/VDC skeleton
-- Memory control registers
-
-### Phase 3: Runtime (COMPLETE)
-Goal: Games run and display, even if slowly
-
-- Complete GPU/graphics subsystem
-- Proper timing and interrupt timing
-- Software framebuffer rendering
-
-### Phase 4: Performance & Polish (PLANNED)
-Goal: Better FPS and user experience
-
-- Performance optimization
-- Game selection menu
-- Save state support
-- Slot-2 RAM integration (SuperChis Prime 32MB SDRAM)
+1. `/psx/boot.exe` or `/PSX/BOOT.EXE`
+2. `/psx/demo.bin` (raw binary at 0x00010000)
+3. `/psx/scph1001.bin` (BIOS boot)
+4. Built-in demo
 
 ## Controls
 
-- `A`: execute 1 instruction
-- `B`: execute the current batch size
-- `Y`: execute 8 batches at once
-- `X`: toggle auto-run
-- `L`: halve batch size OR save test results (in test mode)
-- `R`: double the batch size
-- `START`: reload files and reboot (also saves test results)
-- `SELECT`: toggle test mode (also saves results when exiting)
+| Button | Action |
+|--------|--------|
+| D-Pad | Move |
+| A | Confirm |
+| B | Cancel |
+| START | Start |
+| SELECT | Open menu |
 
-## Testing Procedures
+## Configuration
 
-To reduce SD card wear, use the batch testing system:
-
-1. Press `SELECT` to enable test mode
-2. Use `A`, `B`, or `Y` to run instructions in batches
-3. Each batch run records a test result
-4. Error codes are displayed on screen
-5. Test results auto-save when pressing `SELECT` to exit test mode or `START` to reload
-
-### Error Codes
-
-- `0x0001`: General halt (unsupported opcode)
-- `0x0002`: Syscall
-- `0x0003`: Break instruction
-- `0x0004`: Unimplemented COP0 function
-- `0xFFFF`: Already halted
-
-### Test Results Format
-
-When saved to SD card, test results include:
-- Total tests passed/failed
-- Per-test error codes
-- Cycle count at error
-- PC and opcode at error
-- Error description
-
-## File Loading
-
-At startup, the app tries to load files in this order:
-
-1. `/psx/demo.exe` or `/psx/boot.exe` or `/PSX/BOOT.EXE`
-2. `/psx/demo.bin` (raw binary at 0x00010000)
-3. `/psx/scph1001.bin` or `/psx/bios.bin` (BIOS boot)
-4. Built-in demo
-
-## BIOS Mode
-
-If a legal BIOS image is present, the emulator starts at the PS1 BIOS reset vector (0xBFC00000).
-
-This is a better proof-of-concept target than raw binaries because:
-- It proves BIOS mapping works
-- It gives real instruction traces
-- It shows which opcodes and hardware areas need implementation
-
-## Slot-2 RAM Support
-
-The emulator supports Slot-2 RAM expansions (tested with SuperCard and SuperChis Prime):
-
-- Automatically detects Slot-2 RAM at boot
-- Can map additional PS1 RAM if available
-- Currently supports up to 16MB Slot-2 buffer
-- Future: Full 32MB SDRAM support via SuperChis Prime
-
-## Memory Architecture
-
-The emulator uses reduced memory sizes to fit within the DS 3.5MB ARM9 limit:
-
-| Component | Size | Location |
-|-----------|------|----------|
-| PS1 RAM | 1 MB | Internal (reduced from 2MB) |
-| PS1 BIOS | 512 KB | Internal |
-| GPU VRAM | 256x256 | Internal |
-| Scratchpad | 1 KB | Internal |
-| I/O Registers | 4 KB | Internal |
-| **Total Static** | ~1.65 MB | |
-
-**Headroom:** ~1.85 MB available for future features or Slot-2 integration.
-
-Note: Full 2MB PS1 RAM and larger VRAM can be enabled via Slot-2 RAM when using expansion cartridges.
-
-## Hardware Requirements
-
-- Nintendo DS Lite or original DS (tested with NDSL)
-- Slot-2 flashcart (SuperCard or SuperChis Prime recommended)
-- MicroSD card for game files
-
-### Recommended Setup
-
-For best compatibility:
-1. Use SuperChis Prime in Slot-2 (128MB NOR + 32MB SDRAM)
-2. Load via TwilightMenu++ or direct SuperFW
-3. Future: Direct Slot-2 RAM integration for full PS1 memory
-
-## Performance Targets
-
-- PS1 runs at 33MHz MIPS R3000A
-- DS ARM9 runs at 67MHz
-- Expected: 2-5 FPS for simple games, <1 FPS for complex games
-- Frame skipping will be necessary
-
-## Architecture Notes
-
-### Modular Subsystem Design
-
-Each PS1 subsystem is implemented as a separate module:
-
-```
-psx_cdrom.c ← CD-ROM controller (Phase 2)
-psx_dma.c   ← DMA channels (Phase 2)
-psx_gpu.c   ← GPU/VDC (Phase 3)
-psx_spu.c   ← Sound stub (Phase 1)
-psx_slot2.c ← Slot-2 RAM (Phase 1)
-```
-
-All subsystems are initialized via `psx_init_*()` functions and updated via `psx_update_peripherals()`.
-
-### RAM Backend Abstraction
-
-The emulator keeps RAM access behind a backend abstraction:
-- Current builds use internal DS RAM (1MB for PS1)
-- Slot-2 RAM can be used for expanded PS1 memory
-- Future: different backing stores possible without CPU core rewrites
-
-### Sound Subsystem
-
-The sound subsystem (`psx_spu.c`, `psx_spu.h`) is modular and designed for easy disablement:
-
-- Can be compiled out by removing from Makefile
-- Preserves original functionality in separate branch
-- Minimal implementation - outputs silence
-- Ready for full SPU implementation in future
-
-## Homebrew Notes
-
-This project targets standard Nintendo DS homebrew through `libnds` and `libfat`. You do not need a custom DSTWO-style plugin runtime.
+The emulator creates `psxemu.ini` on first run for storing settings.
 
 ## Known Limitations
 
-- No CD-ROM disc reading (ISO loading in progress)
-- Performance will be very low
-- Only simple games may boot initially
-- 1MB PS1 RAM may limit some games (Slot-2 expansion planned)
-- Sound is stub-only
+- **Performance:** Very low FPS (1-5 FPS typical) - software-only emulation is too slow
+- **Sound:** No audio output (SPU stub)
+- **Compatibility:** Limited - only simplest games may boot
+- **Memory:** 1MB PS1 RAM (reduced from original 2MB)
 
-## Future Development
+## Hardware Notes
 
-See the implementation roadmap above. Key areas for improvement:
+### Why Software-Only Emulation Is Difficult
 
-1. **Slot-2 RAM Integration:** Use SuperChis Prime 32MB SDRAM for full 2MB PS1 RAM
-2. **ISO/CD Loading:** Parse and load actual PS1 disc images
-3. **SPU Implementation:** Replace stub with functional sound output
-4. **GPU Completion:** Full polygon rendering and texture support
-5. **Timing Refinement:** Accurate PS1 bus timing emulation
+The Nintendo DS's ARM9 processor (67MHz) is significantly slower than what's needed to emulate a PS1 (33MHz MIPS + GPU + SPU). The PS1 requires:
+
+- ~33 MHz MIPS R3000A CPU emulation
+- GPU polygon rendering
+- ADPCM audio decoding
+- CD-ROM data streaming
+- DMA transfers
+
+Even with aggressive optimization, software-only emulation cannot achieve playable framerates.
+
+### Working Alternatives
+
+For actual PS1 gameplay on DS hardware:
+
+1. **SuperCard DSTWO** (discontinued, ~$80-150)
+   - Has built-in MIPS co-processor
+   - Runs psx4all emulator
+   - Achieves ~10-15 FPS, no sound
+
+2. **Nintendo 3DS** (New model)
+   - Much faster ARM11 processor
+   - Can run PS1 emulators at full speed
+
+3. **Other Handhelds**
+   - RGB30, RG35XX, Miyoo Mini
+   - Run PS1 emulation well via Rockchip/RTL SoCs
+
+## Development
+
+### Adding Sound
+
+The SPU is currently a stub. To implement:
+1. Modify `arm9/psx_spu.c`
+2. Use ARM7 for audio output via IPC
+3. Enable libmad or similar for ADPCM
+
+### Performance Optimization
+
+Current flags in Makefile:
+- `-O3` optimization enabled
+- `-march=armv5te` - ARM946E-S target
+
+### Slot-2 Support
+
+Auto-detection is disabled for safety. Manual detection available:
+1. Press SELECT to enter manual mode
+2. Press A to detect Slot-2 RAM
+
+## License
+
+This project is for educational purposes. PS1 BIOS and game files are copyright their respective owners.
+
+## References
+
+- [GBATEK](https://problemkaputt.de/gbatek.htm) - DS/PS1 hardware documentation
+- [No$PSX](https://problemkaputt.de/psx.htm) - PS1 hardware specs
+- [devkitPro](https://devkitpro.org/) - DS homebrew SDK
+- [libfat](https://github.com/nickelpack/libfat) - SD card access
+
+## Contact
+
+For issues/updates, check the project repository.
